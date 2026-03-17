@@ -82,3 +82,27 @@ button:active {
     50%  { opacity: 0.35; }
     100% { opacity: 1; }
 }
+
+#chartWrapper {
+    position: relative;
+}
+
+.glow-overlay {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 25%; /* covers last 3 candles visually */
+    height: 100%;
+    pointer-events: none;
+    background: radial-gradient(
+        circle at right center,
+        rgba(255, 255, 0, 0.25),
+        rgba(255, 255, 0, 0)
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.glow-overlay.show {
+    opacity: 1;
+}
