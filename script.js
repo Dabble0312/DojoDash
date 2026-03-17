@@ -180,7 +180,7 @@ function appendFutureCandles() {
 
 /* -----------------------------------------
    8. HOLLOW CANDLE LOGIC
------------------------------------------ */
+----------------------------------------- 
 // Batch version used on initial visible candles
 function applyHollowCandleLogic(data) {
     data.forEach((candle, index) => {
