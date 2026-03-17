@@ -171,32 +171,30 @@ function appendFutureCandles() {
 /* -----------------------------------------
    8. HOLLOW CANDLE LOGIC
 ----------------------------------------- */
-function applyHollowCandleLogic(data) {
-    data.forEach((candle, index) => {
-        const prevCandle = index > 0 ? data[index - 1] : null;
-        const isGreen = candle.close > candle.open;
-        const isHollow = prevCandle ? candle.close > prevCandle.close : isGreen;
+function applyHollowCandleLogicToSingle(candle, prevCandle) {
+    const isGreen = candle.close > candle.open;
+    const isHollow = prevCandle ? candle.close > prevCandle.close : isGreen;
 
-        const greenColor = '#26a69a';
-        const redColor = '#ef5350';
-        const transparentGreen = 'rgba(38,166,154,0.0)';
-        const transparentRed = 'rgba(239,83,80,0.0)';
+    const greenColor = '#26a69a';
+    const redColor = '#ef5350';
+    const transparentGreen = 'rgba(38,166,154,0.0)';
+    const transparentRed = 'rgba(239,83,80,0.0)';
 
-        if (isGreen) {
-            candlestickSeries.applyOptions({
-                upColor: isHollow ? transparentGreen : greenColor,
-                borderUpColor: greenColor,
-                wickUpColor: greenColor,
-            });
-        } else {
-            candlestickSeries.applyOptions({
-                downColor: isHollow ? transparentRed : redColor,
-                borderDownColor: redColor,
-                wickDownColor: redColor,
-            });
-        }
-    });
+    if (isGreen) {
+        candlestickSeries.applyOptions({
+            upColor: isHollow ? transparentGreen : greenColor,
+            borderUpColor: greenColor,
+            wickUpColor: greenColor,
+        });
+    } else {
+        candlestickSeries.applyOptions({
+            downColor: isHollow ? transparentRed : redColor,
+            borderDownColor: redColor,
+            wickDownColor: redColor,
+        });
+    }
 }
+
 function showPopup(result) {
     const popup = document.getElementById("resultPopup");
     const text = document.getElementById("resultText");
