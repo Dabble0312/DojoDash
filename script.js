@@ -186,18 +186,12 @@ function showPopup(result) {
    9. Flash Animation  
 ----------------------------------------- */
 function flashAndGlow() {
-    const wrapper = document.getElementById("chartWrapper");
-    const glow = document.getElementById("glowOverlay");
+    const chartDiv = document.getElementById("chart");
+    if (!chartDiv) return;
 
-    // Flash the whole chart
-    wrapper.classList.add("flash-candles");
+    chartDiv.classList.add("flash-candles");
 
-    // Glow on the right side
-    glow.classList.add("show");
-
-    // Remove both after animation
     setTimeout(() => {
-        wrapper.classList.remove("flash-candles");
-        glow.classList.remove("show");
-    }, 800); // matches the double-flash duration
+        chartDiv.classList.remove("flash-candles");
+    }, 800);
 }
