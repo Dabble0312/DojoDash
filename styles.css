@@ -4,10 +4,27 @@
 }
 
 button {
-  padding: 10px 20px;
-  font-size: 16px;
-  margin: 10px;
+  background: linear-gradient(135deg, #ff8a00, #e52e71);
+  color: white;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
+
+button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.2);
+}
+
+button:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+}
+
 .popup {
     position: fixed;
     top: 50%;
