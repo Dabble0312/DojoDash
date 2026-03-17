@@ -96,7 +96,7 @@ function initChart() {
     }));
 
     candlestickSeries.setData(visibleDataWithTime);
-    applyHollowCandleLogic(visibleDataWithTime); // now exists again
+    // temporarily no hollow logic
     chart.timeScale().fitContent();
 }
 
@@ -141,81 +141,25 @@ function handleGuess(guess) {
    7. APPEND FUTURE CANDLES
 ----------------------------------------- */
 function appendFutureCandles() {
+    const currentData = candlestickSeries.data();
     const start = Math.floor(Date.now() / 1000);
     const startIndex = visibleCandles.length;
 
-    futureCandles.forEach((candle, index) => {
-        const newCandle = {
-            time: start + (startIndex + index) * 60,
-            open: candle.o,
-            high: candle.h,
-            low: candle.l,
-            close: candle.c,
-        };
+    const futureData = futureCandles.map((candle, index) => ({
+        time: start + (startIndex + index) * 60,
+        open: candle.o,
+        high: candle.h,
+        low: candle.l,
+        close: candle.c,
+    }));
 
-        // Build a prevCandle in the same shape (with .open/.close)
-        let prevCandle;
-        if (index === 0) {
-            const lastVisible = visibleCandles[visibleCandles.length - 1];
-            prevCandle = {
-                open: lastVisible.o,
-                close: lastVisible.c,
-            };
-        } else {
-            const prevFuture = futureCandles[index - 1];
-            prevCandle = {
-                open: prevFuture.o,
-                close: prevFuture.c,
-            };
-        }
-
-        applyHollowCandleLogicToSingle(newCandle, prevCandle);
-
-        // Append without touching old candles
-        candlestickSeries.update(newCandle);
-    });
-
+    const allData = currentData.concat(futureData);
+    candlestickSeries.setData(allData);
     chart.timeScale().fitContent();
 }
 
 /* -----------------------------------------
-   8. HOLLOW CANDLE LOGIC
------------------------------------------ 
-// Batch version used on initial visible candles
-function applyHollowCandleLogic(data) {
-    data.forEach((candle, index) => {
-        const prev = index > 0 ? data[index - 1] : null;
-        applyHollowCandleLogicToSingle(candle, prev);
-    });
-}
-
-// Single-candle version used when appending
-function applyHollowCandleLogicToSingle(candle, prevCandle) {
-    const isGreen = candle.close > candle.open;
-    const isHollow = prevCandle ? candle.close > prevCandle.close : isGreen;
-
-    const greenColor = '#26a69a';
-    const redColor = '#ef5350';
-    const transparentGreen = 'rgba(38,166,154,0.0)';
-    const transparentRed = 'rgba(239,83,80,0.0)';
-
-    if (isGreen) {
-        candlestickSeries.applyOptions({
-            upColor: isHollow ? transparentGreen : greenColor,
-            borderUpColor: greenColor,
-            wickUpColor: greenColor,
-        });
-    } else {
-        candlestickSeries.applyOptions({
-            downColor: isHollow ? transparentRed : redColor,
-            borderDownColor: redColor,
-            wickDownColor: redColor,
-        });
-    }
-}
-
-/* -----------------------------------------
-   9. Message Pop-Up of the answer 
+   8. Message Pop-Up of the answer 
 ----------------------------------------- */
 function showPopup(result) {
     const popup = document.getElementById("resultPopup");
