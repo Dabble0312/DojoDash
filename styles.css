@@ -3,9 +3,8 @@
   height: 400px;
 }
 
+/* Base button styling */
 button {
-  background: linear-gradient(135deg, #ff8a00, #e52e71);
-  color: white;
   padding: 14px 24px;
   border: none;
   border-radius: 12px;
@@ -15,10 +14,28 @@ button {
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 14px rgba(0,0,0,0.2);
+/* UP button */
+button.up {
+  background: #8df7a3; /* light green */
+  color: #0b4d1a;
 }
+
+button.up:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+}
+
+/* DOWN button */
+button.down {
+  background: #ffb3b3; /* light red */
+  color: #7a0000;
+}
+
+button.down:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+}
+
 
 button:active {
   transform: translateY(0);
