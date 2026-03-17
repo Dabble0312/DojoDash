@@ -141,23 +141,32 @@ function handleGuess(guess) {
    7. APPEND FUTURE CANDLES
 ----------------------------------------- */
 function appendFutureCandles() {
-    const currentData = candlestickSeries.data();
     const start = Math.floor(Date.now() / 1000);
     const startIndex = visibleCandles.length;
 
-    const futureData = futureCandles.map((candle, index) => ({
-        time: start + (startIndex + index) * 60,
-        open: candle.o,
-        high: candle.h,
-        low: candle.l,
-        close: candle.c,
-    }));
+    futureCandles.forEach((candle, index) => {
+        const newCandle = {
+            time: start + (startIndex + index) * 60,
+            open: candle.o,
+            high: candle.h,
+            low: candle.l,
+            close: candle.c,
+        };
 
-    const allData = currentData.concat(futureData);
-    candlestickSeries.setData(allData);
-    applyHollowCandleLogic(allData);
+        // Previous candle for hollow logic
+        const prev = index === 0 
+            ? visibleCandles[visibleCandles.length - 1] 
+            : futureCandles[index - 1];
+
+        applyHollowCandleLogicToSingle(newCandle, prev);
+
+        // Append without touching old candles
+        candlestickSeries.update(newCandle);
+    });
+
     chart.timeScale().fitContent();
 }
+
 
 /* -----------------------------------------
    8. HOLLOW CANDLE LOGIC
