@@ -229,6 +229,7 @@ function showPopup(result) {
     } else {
         text.textContent = "Wrong!";
         popup.classList.add("wrong");
+    
     }
 
     popup.classList.add("show");
