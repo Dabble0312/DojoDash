@@ -194,7 +194,9 @@ function applyHollowCandleLogicToSingle(candle, prevCandle) {
         });
     }
 }
-
+/* -----------------------------------------
+   9. Message Pop-Up of the answer 
+----------------------------------------- */
 function showPopup(result) {
     const popup = document.getElementById("resultPopup");
     const text = document.getElementById("resultText");
