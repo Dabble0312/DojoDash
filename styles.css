@@ -106,3 +106,16 @@ button:active {
 .glow-overlay.show {
     opacity: 1;
 }
+
+.flash-candles {
+    animation: flash 0.35s ease-in-out 2;
+}
+
+#chart.flash-candles {
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.7);
+}
+
+@keyframes flash {
+    0%   { opacity: 1; }
+    50%  { opacity: 0.3; }
+    100% { opacity: 1; }
