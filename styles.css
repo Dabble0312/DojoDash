@@ -73,3 +73,12 @@ button:active {
 .hidden {
     display: none;
 }
+.flash-candles {
+    animation: flash 0.35s ease-in-out 2;
+}
+
+@keyframes flash {
+    0%   { opacity: 1; }
+    50%  { opacity: 0.35; }
+    100% { opacity: 1; }
+}
