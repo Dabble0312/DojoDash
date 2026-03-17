@@ -128,6 +128,7 @@ function handleGuess(guess) {
     }
 
     appendFutureCandles();
+    flashAndGlow();
 
     // Load next block after animation
     setTimeout(() => {
@@ -180,4 +181,23 @@ function showPopup(result) {
         popup.classList.remove("show");
         setTimeout(() => popup.classList.add("hidden"), 400);
     }, 1200);
+}
+/* -----------------------------------------
+   9. Flash Animation  
+----------------------------------------- */
+function flashAndGlow() {
+    const wrapper = document.getElementById("chartWrapper");
+    const glow = document.getElementById("glowOverlay");
+
+    // Flash the whole chart
+    wrapper.classList.add("flash-candles");
+
+    // Glow on the right side
+    glow.classList.add("show");
+
+    // Remove both after animation
+    setTimeout(() => {
+        wrapper.classList.remove("flash-candles");
+        glow.classList.remove("show");
+    }, 800); // matches the double-flash duration
 }
