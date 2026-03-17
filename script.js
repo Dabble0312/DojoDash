@@ -96,7 +96,7 @@ function initChart() {
     }));
 
     candlestickSeries.setData(visibleDataWithTime);
-    applyHollowCandleLogic(visibleDataWithTime);
+    applyHollowCandleLogic(visibleDataWithTime); // now exists again
     chart.timeScale().fitContent();
 }
 
@@ -153,12 +153,23 @@ function appendFutureCandles() {
             close: candle.c,
         };
 
-        // Previous candle for hollow logic
-        const prev = index === 0 
-            ? visibleCandles[visibleCandles.length - 1] 
-            : futureCandles[index - 1];
+        // Build a prevCandle in the same shape (with .open/.close)
+        let prevCandle;
+        if (index === 0) {
+            const lastVisible = visibleCandles[visibleCandles.length - 1];
+            prevCandle = {
+                open: lastVisible.o,
+                close: lastVisible.c,
+            };
+        } else {
+            const prevFuture = futureCandles[index - 1];
+            prevCandle = {
+                open: prevFuture.o,
+                close: prevFuture.c,
+            };
+        }
 
-        applyHollowCandleLogicToSingle(newCandle, prev);
+        applyHollowCandleLogicToSingle(newCandle, prevCandle);
 
         // Append without touching old candles
         candlestickSeries.update(newCandle);
@@ -167,10 +178,18 @@ function appendFutureCandles() {
     chart.timeScale().fitContent();
 }
 
-
 /* -----------------------------------------
    8. HOLLOW CANDLE LOGIC
 ----------------------------------------- */
+// Batch version used on initial visible candles
+function applyHollowCandleLogic(data) {
+    data.forEach((candle, index) => {
+        const prev = index > 0 ? data[index - 1] : null;
+        applyHollowCandleLogicToSingle(candle, prev);
+    });
+}
+
+// Single-candle version used when appending
 function applyHollowCandleLogicToSingle(candle, prevCandle) {
     const isGreen = candle.close > candle.open;
     const isHollow = prevCandle ? candle.close > prevCandle.close : isGreen;
@@ -194,6 +213,7 @@ function applyHollowCandleLogicToSingle(candle, prevCandle) {
         });
     }
 }
+
 /* -----------------------------------------
    9. Message Pop-Up of the answer 
 ----------------------------------------- */
@@ -219,3 +239,4 @@ function showPopup(result) {
         setTimeout(() => popup.classList.add("hidden"), 400);
     }, 1200);
 }
+  
