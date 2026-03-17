@@ -86,15 +86,13 @@ function initChart() {
         wickVisible: true,
     });
 
-    const start = Math.floor(Date.now() / 1000);
-    const visibleDataWithTime = visibleCandles.map((candle, index) => ({
-        time: start + index * 60,
-        open: candle.o,
-        high: candle.h,
-        low: candle.l,
-        close: candle.c,
-    }));
-
+  const visibleDataWithTime = visibleCandles.map((candle, index) => ({
+    time: index + 1,   // 1 through 10
+    open: candle.o,
+    high: candle.h,
+    low: candle.l,
+    close: candle.c,
+}))
     candlestickSeries.setData(visibleDataWithTime);
     // temporarily no hollow logic
     chart.timeScale().fitContent();
