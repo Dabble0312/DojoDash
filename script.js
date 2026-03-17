@@ -229,7 +229,6 @@ function showPopup(result) {
     } else {
         text.textContent = "Wrong!";
         popup.classList.add("wrong");
-    
     }
 
     popup.classList.add("show");
@@ -240,4 +239,3 @@ function showPopup(result) {
         setTimeout(() => popup.classList.add("hidden"), 400);
     }, 1200);
 }
-  
