@@ -136,7 +136,7 @@ button:active {
 .best-display {
     text-align: center;
     font-size: 1.1rem;
-    margin-bottom: 15px;
+    margin-bottom: 50px;
     color: #ffa726; /* gold/orange for personal best */
     font-weight: bold;
 }
