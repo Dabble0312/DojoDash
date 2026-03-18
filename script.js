@@ -6,6 +6,12 @@ let gameActive = true;
 let chart;
 let candlestickSeries;
 
+window.addEventListener("DOMContentLoaded", () => {
+    const username = localStorage.getItem("username") || "Player";
+    const display = document.getElementById("usernameDisplay");
+    if (display) display.textContent = "Player: " + username;
+});
+
 /* -----------------------------------------
    1. RANDOM BLOCK LOADER
 ----------------------------------------- */
