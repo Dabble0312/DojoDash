@@ -10,7 +10,7 @@ let candlestickSeries;
 
 
 // =========================
-//  WSB REACTIONS
+//  WSB REACTIONSS
 // =========================
 const WSB_GOOD = [
     "🚀 Nice call, you absolute legend.",
