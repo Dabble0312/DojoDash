@@ -133,3 +133,10 @@ button:active {
     color: #4caf50; /* green streak color */
     font-weight: bold;
 }
+.best-display {
+    text-align: center;
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    color: #ffa726; /* gold/orange for personal best */
+    font-weight: bold;
+}
