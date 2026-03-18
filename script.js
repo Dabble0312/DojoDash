@@ -259,10 +259,6 @@ function flashAndGlow() {
     }, 800);
 }
 
-function updateStreakDisplay() {
-    const streakEl = document.getElementById("streakDisplay");
-    if (streakEl) streakEl.textContent = "Streak: " + streak;
-}
 
 /* -----------------------------------------
    10. WSB Lingo  
