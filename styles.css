@@ -126,3 +126,10 @@ button:active {
     margin-bottom: 10px;
     color: #ccc;
 }
+.streak-display {
+    text-align: center;
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    color: #4caf50; /* green streak color */
+    font-weight: bold;
+}
