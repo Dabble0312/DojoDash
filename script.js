@@ -9,6 +9,25 @@ let chart;
 let candlestickSeries;
 
 
+// =========================
+//  WSB REACTIONS
+// =========================
+const WSB_GOOD = [
+    "🚀 Nice call, you absolute legend.",
+    "💎🙌 Diamond hands detected.",
+    "📈 You’re cooking, chef.",
+    "🔥 Certified candle whisperer.",
+    "🧠 Big brain energy."
+];
+
+const WSB_BAD = [
+    "🤡 That candle clowned you.",
+    "🩸 Paper hands spotted.",
+    "📉 Should’ve stayed in school.",
+    "💀 Market just slapped you.",
+    "🙈 Bruh… not like this."
+];
+
 // ⭐ Username + streak setup
 let username = localStorage.getItem("username") || "Player";
 
@@ -161,12 +180,14 @@ function handleGuess(guess) {
         localStorage.setItem(username + "_streak", streak);
         updateStreakDisplay();
         showPopup("correct");
+        showWSBPopup(true); 
 
     } else {
         streak = 0;
         localStorage.setItem(username + "_streak", 0);
         updateStreakDisplay();
         showPopup("wrong");
+        showWSBPopup(false);
     }
 
     appendFutureCandles();
@@ -241,4 +262,32 @@ function flashAndGlow() {
 function updateStreakDisplay() {
     const streakEl = document.getElementById("streakDisplay");
     if (streakEl) streakEl.textContent = "Streak: " + streak;
+}
+
+/* -----------------------------------------
+   10. WSB Lingo  
+----------------------------------------- */
+
+
+function showWSBPopup(isCorrect) {
+    const popup = document.getElementById("wsbPopup");
+    const text = document.getElementById("wsbText");
+
+    popup.classList.remove("good", "bad", "hidden", "show");
+
+    if (isCorrect) {
+        text.textContent = WSB_GOOD[Math.floor(Math.random() * WSB_GOOD.length)];
+        popup.classList.add("good");
+    } else {
+        text.textContent = WSB_BAD[Math.floor(Math.random() * WSB_BAD.length)];
+        popup.classList.add("bad");
+    }
+
+    popup.classList.add("show");
+
+    // Hide after 1.2 seconds
+    setTimeout(() => {
+        popup.classList.remove("show");
+        setTimeout(() => popup.classList.add("hidden"), 400);
+    }, 1200);
 }
