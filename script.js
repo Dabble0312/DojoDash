@@ -286,3 +286,21 @@ function showWSBPopup(isCorrect) {
     }, 1200);
 }
 
+function getRandomEmoji(type) {
+    if (type === "profit") {
+        const profitEmojis = [
+            "assets/images/mascot/profit/profit1.png",
+            "assets/images/mascot/profit/profit2.png",
+            "assets/images/mascot/profit/profit3.png",
+            "assets/images/mascot/profit/profit4.png"
+        ];
+        return profitEmojis[Math.floor(Math.random() * profitEmojis.length)];
+    }
+
+    const lossEmojis = [
+        "assets/images/mascot/loss/loss1.png",
+        "assets/images/mascot/loss/loss2.png",
+        "assets/images/mascot/loss/loss3.png"
+    ];
+    return lossEmojis[Math.floor(Math.random() * lossEmojis.length)];
+}
