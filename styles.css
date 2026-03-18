@@ -158,11 +158,12 @@ button:active {
   animation: flash 0.6s ease-in-out;
 }
 
-/* Center the index page content only */
-.index-container {
+/* Center the home screen content only */
+.home-container {
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
+    justify-content: center;   /* vertical center */
+    align-items: center;       /* horizontal center */
     text-align: center;
+}
