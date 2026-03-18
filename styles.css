@@ -167,3 +167,26 @@ button:active {
     align-items: center;       /* horizontal center */
     text-align: center;
 }
+
+/* Space between the two home buttons */
+.start-button,
+.btn {
+    margin-top: 12px;
+    width: 220px;           /* keeps them aligned and tidy */
+}
+
+/* Optional: add a clean border + subtle hover effect */
+.start-button,
+.btn {
+    border: 1px solid rgba(0,0,0,0.1);
+    background: white;
+    color: var(--text-main);
+    transition: all 0.2s ease;
+}
+
+.start-button:hover,
+.btn:hover {
+    border-color: rgba(0,0,0,0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
