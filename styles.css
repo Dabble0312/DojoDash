@@ -119,8 +119,9 @@ button:active {
     0%   { opacity: 1; }
     50%  { opacity: 0.3; }
     100% { opacity: 1; }
+}
 
-  .username-display {
+.username-display {
     text-align: center;
     font-size: 1.1rem;
     margin-bottom: 10px;
@@ -142,35 +143,29 @@ button:active {
 }
 
 .wsb-popup {
-    all: unset;
     position: fixed;
     bottom: 25px;
     right: 25px;
     max-width: 320px;
-
     background-color: rgba(255, 215, 0, 0.95);
     color: #000;
-
     padding: 22px 28px;
     border-radius: 14px;
-
     font-size: 24px;
     font-weight: 900;
     line-height: 1.3;
-
-    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
     border: 2px solid rgba(255, 230, 120, 0.9);
-
     opacity: 0;
     pointer-events: none;
     transform: translateY(20px);
     transition: opacity 0.35s ease, transform 0.35s ease;
-
     z-index: 9999;
 }
 
 .wsb-popup.show {
     opacity: 1;
+    pointer-events: auto;
     transform: translateY(0);
 }
 
@@ -180,4 +175,8 @@ button:active {
 
 .wsb-popup.bad {
     border-color: #e74c3c;
+}
+
+.wsb-popup #wsbText {
+    display: block;
 }

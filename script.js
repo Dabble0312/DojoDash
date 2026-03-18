@@ -269,10 +269,8 @@ function showWSBPopup(isCorrect) {
     const text = document.getElementById("wsbText");
     if (!popup || !text) return;
 
-    // Reset state
-    popup.classList.remove("good", "bad", "show", "hidden");
+    popup.classList.remove("good", "bad", "show");
 
-    // Apply message + color
     if (isCorrect) {
         text.textContent = WSB_GOOD[Math.floor(Math.random() * WSB_GOOD.length)];
         popup.classList.add("good");
@@ -281,13 +279,10 @@ function showWSBPopup(isCorrect) {
         popup.classList.add("bad");
     }
 
-    // Show popup
     popup.classList.add("show");
 
-    // Hide after animation
     setTimeout(() => {
         popup.classList.remove("show");
-        setTimeout(() => popup.classList.add("hidden"), 400);
     }, 1200);
 }
 
