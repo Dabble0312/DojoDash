@@ -267,11 +267,12 @@ function flashAndGlow() {
 function showWSBPopup(isCorrect) {
     const popup = document.getElementById("wsbPopup");
     const text = document.getElementById("wsbText");
-    if (!popup || !text) return; // prevents crashes
+    if (!popup || !text) return;
 
-    popup.classList.remove("hidden"); 
-    popup.classList.remove("good", "bad", "hidden", "show");
+    // Reset state
+    popup.classList.remove("good", "bad", "show", "hidden");
 
+    // Apply message + color
     if (isCorrect) {
         text.textContent = WSB_GOOD[Math.floor(Math.random() * WSB_GOOD.length)];
         popup.classList.add("good");
@@ -280,10 +281,13 @@ function showWSBPopup(isCorrect) {
         popup.classList.add("bad");
     }
 
+    // Show popup
     popup.classList.add("show");
 
+    // Hide after animation
     setTimeout(() => {
         popup.classList.remove("show");
         setTimeout(() => popup.classList.add("hidden"), 400);
     }, 1200);
 }
+
