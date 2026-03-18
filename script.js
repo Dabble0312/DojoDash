@@ -269,6 +269,7 @@ function showWSBPopup(isCorrect) {
     const text = document.getElementById("wsbText");
     if (!popup || !text) return; // prevents crashes
 
+    popup.classList.remove("hidden"); 
     popup.classList.remove("good", "bad", "hidden", "show");
 
     if (isCorrect) {
