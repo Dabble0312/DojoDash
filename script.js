@@ -267,6 +267,7 @@ function flashAndGlow() {
 function showWSBPopup(isCorrect) {
     const popup = document.getElementById("wsbPopup");
     const text = document.getElementById("wsbText");
+    if (!popup || !text) return; // prevents crashes
 
     popup.classList.remove("good", "bad", "hidden", "show");
 
@@ -280,7 +281,6 @@ function showWSBPopup(isCorrect) {
 
     popup.classList.add("show");
 
-    // Hide after 1.2 seconds
     setTimeout(() => {
         popup.classList.remove("show");
         setTimeout(() => popup.classList.add("hidden"), 400);
