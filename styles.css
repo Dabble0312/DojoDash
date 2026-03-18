@@ -1,184 +1,159 @@
+/* --- DOJI DASH PROFESSIONAL SKIN --- */
+
+:root {
+  --bg-color: #f8fafc; /* Professional off-white/slate */
+  --text-main: #0f172a;
+  --emerald: #10b981;
+  --emerald-text: #064e3b;
+  --rose: #ef4444;
+  --rose-text: #7f1d1d;
+  --glass: rgba(255, 255, 255, 0.7);
+}
+
+body {
+  background-color: var(--bg-color);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--text-main);
+  margin: 0;
+  padding: 20px;
+}
+
 #chart {
   width: 100%;
   height: 400px;
+  background: white;
+  border-radius: 16px;
+  border: 1px solid rgba(0,0,0,0.05);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-/* Base button styling */
+/* HUD / Stats Styling */
+.username-display, .streak-display, .best-display {
+  text-align: left;
+  margin: 0;
+  padding: 2px 0;
+}
+
+.username-display { font-weight: 400; color: #64748b; font-size: 0.9rem; }
+.streak-display { font-size: 1.5rem; color: var(--text-main); }
+.best-display { font-size: 0.85rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 40px; }
+
+/* Refined Buttons */
 button {
-  padding: 14px 24px;
+  padding: 16px 32px;
   border: none;
-  border-radius: 12px;
-  font-size: 18px;
-  font-weight: 600;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 0px rgba(0,0,0,0.1); /* Subtle 3D look */
 }
 
-/* UP button */
+/* UP button - Fintech Emerald */
 button.up {
-  background: #8df7a3; /* light green */
-  color: #0b4d1a;
+  background: var(--emerald);
+  color: white;
 }
 
 button.up:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+  background: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(16, 185, 129, 0.3);
 }
 
-/* DOWN button */
+/* DOWN button - Fintech Rose */
 button.down {
-  background: #ffb3b3; /* light red */
-  color: #7a0000;
+  background: var(--rose);
+  color: white;
 }
 
 button.down:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+  background: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(239, 68, 68, 0.3);
 }
-
 
 button:active {
-  transform: translateY(0);
-  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+  transform: translateY(2px);
+  box-shadow: 0 0px 0px transparent;
 }
 
+/* Prediction Popups (Wrong/Correct) */
 .popup {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    padding: 25px 40px;
-    border-radius: 12px;
-    font-size: 28px;
-    font-weight: bold;
-    color: white;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.4s ease;
-    z-index: 9999;
-}
-
-.popup.correct {
-    background-color: rgba(46, 204, 113, 0.95); /* green */
-}
-
-.popup.wrong {
-    background-color: rgba(231, 76, 60, 0.95); /* red */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  padding: 24px 48px;
+  border-radius: 20px;
+  font-size: 32px;
+  font-weight: 800;
+  color: white;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 9999;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
 }
 
 .popup.show {
-    opacity: 1;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
 }
 
-.hidden {
-    display: none;
-}
-.flash-candles {
-    animation: flash 0.35s ease-in-out 2;
-}
+.popup.correct { background-color: rgba(16, 185, 129, 0.9); }
+.popup.wrong { background-color: rgba(239, 68, 68, 0.9); }
 
-@keyframes flash {
-    0%   { opacity: 1; }
-    50%  { opacity: 0.35; }
-    100% { opacity: 1; }
-}
-
-#chartWrapper {
-    position: relative;
-}
-
-.glow-overlay {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 25%; /* covers last 3 candles visually */
-    height: 100%;
-    pointer-events: none;
-    background: radial-gradient(
-        circle at right center,
-        rgba(255, 255, 0, 0.25),
-        rgba(255, 255, 0, 0)
-    );
-    opacity: 0;
-    transition: opacity 0.3s ease-in-out;
-}
-
-.glow-overlay.show {
-    opacity: 1;
-}
-
-.flash-candles {
-    animation: flash 0.35s ease-in-out 2;
-}
-
-#chart.flash-candles {
-    box-shadow: 0 0 25px rgba(255, 215, 0, 0.7);
-}
-
-@keyframes flash {
-    0%   { opacity: 1; }
-    50%  { opacity: 0.3; }
-    100% { opacity: 1; }
-}
-.username-display {
-    text-align: left;
-    font-size: 1.1rem;
-    margin-bottom: 10px;
-    color: #000;
-}
-
-.streak-display {
-    text-align: left;
-    font-size: 1.2rem;
-    margin-bottom: 10px;
-    color: #000;
-    font-weight: bold;
-}
-
-.best-display {
-    text-align: left;
-    font-size: 1.1rem;
-    margin-bottom: 50px;
-    color: #000;
-    font-weight: bold;
-}
-
+/* The Roast Box (WSB Popup) - Modern Card Style */
 .wsb-popup {
-    position: fixed;
-    bottom: 25px;
-    right: 25px;
-    max-width: 280px;
-
-    background-color: rgba(220, 235, 255, 0.95); /* very light blue */
-    color: #0a2540; /* deep navy text for readability */
-
-    padding: 18px 22px;
-    border-radius: 14px;
-
-    font-size: 18px;
-    font-weight: 600;
-    line-height: 1.4;
-
-    border: 1px solid rgba(150, 180, 220, 0.6); /* soft blue border */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12); /* subtle shadow */
-
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(12px);
-    transition: opacity 0.3s ease, transform 0.3s ease;
-
-    z-index: 9999;
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 300px;
+  background: white;
+  color: var(--text-main);
+  padding: 20px;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 500;
+  border: 1px solid rgba(0,0,0,0.05);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transform: translateX(40px);
+  opacity: 0;
+  transition: all 0.4s ease;
 }
 
 .wsb-popup.show {
-    opacity: 1;
-    transform: translateY(0);
+  opacity: 1;
+  transform: translateX(0);
 }
 
-.wsb-popup.good {
-    border-color: rgba(120, 200, 160, 0.7); /* soft green tint */
+/* Subtle accent line inside the roast box */
+.wsb-popup::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 20%;
+  bottom: 20%;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
 }
 
-.wsb-popup.bad {
-    border-color: rgba(220, 140, 140, 0.7); /* soft red tint */
+.wsb-popup.good::before { background: var(--emerald); }
+.wsb-popup.bad::before { background: var(--rose); }
+
+/* Chart Animations */
+@keyframes flash {
+  0%   { border-color: transparent; }
+  50%  { border-color: #ffd700; box-shadow: 0 0 30px rgba(255, 215, 0, 0.3); }
+  100% { border-color: transparent; }
+}
+
+#chart.flash-candles {
+  border: 2px solid #ffd700;
+  animation: flash 0.6s ease-in-out;
 }
