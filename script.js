@@ -263,19 +263,21 @@ function flashAndGlow() {
    10. WSB Lingo  
 ----------------------------------------- */
 
-
 function showWSBPopup(isCorrect) {
     const popup = document.getElementById("wsbPopup");
     const text = document.getElementById("wsbText");
-    if (!popup || !text) return;
+    const emoji = document.getElementById("mascotEmoji");
+    if (!popup || !text || !emoji) return;
 
     popup.classList.remove("good", "bad", "show");
 
     if (isCorrect) {
         text.textContent = WSB_GOOD[Math.floor(Math.random() * WSB_GOOD.length)];
+        emoji.src = getRandomEmoji("profit");
         popup.classList.add("good");
     } else {
         text.textContent = WSB_BAD[Math.floor(Math.random() * WSB_BAD.length)];
+        emoji.src = getRandomEmoji("loss");
         popup.classList.add("bad");
     }
 
