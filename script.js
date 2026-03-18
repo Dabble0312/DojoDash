@@ -23,8 +23,9 @@ window.addEventListener("DOMContentLoaded", () => {
     const username = localStorage.getItem("username") || "Player";
     const display = document.getElementById("usernameDisplay");
     if (display) display.textContent = "Player: " + username;
-});
 
+    updateStreakDisplay();
+});
 /* -----------------------------------------
    1. RANDOM BLOCK LOADER
 ----------------------------------------- */
@@ -141,10 +142,19 @@ function handleGuess(guess) {
     const priceWentUp = lastFutureClose > lastVisibleClose;
 
     if ((guess === 'up' && priceWentUp) || (guess === 'down' && !priceWentUp)) {
-        showPopup("correct");
-    } else {
-       showPopup("wrong");
-    }
+    // Correct guess
+    streak++;
+    localStorage.setItem(username + "_streak", streak);
+    updateStreakDisplay();
+    showPopup("correct");
+} else {
+    // Wrong guess
+    streak = 0;
+    localStorage.setItem(username + "_streak", streak);
+    updateStreakDisplay();
+    showPopup("wrong");
+}
+  
 
     appendFutureCandles();
     flashAndGlow();
@@ -213,4 +223,9 @@ function flashAndGlow() {
     setTimeout(() => {
         chartDiv.classList.remove("flash-candles");
     }, 800);
+}
+
+function updateStreakDisplay() {
+    const streakEl = document.getElementById("streakDisplay");
+    if (streakEl) streakEl.textContent = "Streak: " + streak;
 }
