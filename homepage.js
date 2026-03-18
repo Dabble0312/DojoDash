@@ -10,5 +10,5 @@ document.getElementById("startBtn").addEventListener("click", () => {
     localStorage.setItem("username", username);
 
     // Redirect to your game page
-    window.location.href = "index.html";
+    window.location.href = "game.html";
 });
