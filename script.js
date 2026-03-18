@@ -10,14 +10,20 @@ let candlestickSeries;
 
 
 // ⭐ Username + streak setup
-let streak = 0;
 let username = localStorage.getItem("username") || "Player";
 
-// Load saved streak for this specific user
-const savedStreak = localStorage.getItem(username + "_streak");
-if (savedStreak) {
-    streak = parseInt(savedStreak);
+let streak = parseInt(localStorage.getItem(username + "_streak")) || 0;
+let best   = parseInt(localStorage.getItem(username + "_best"))   || 0;
+
+function updateStreakDisplay() {
+    const el = document.getElementById("streakDisplay");
+    if (el) el.textContent = "Streak: " + streak;
 }
+
+function updateBestDisplay() {
+    const el = document.getElementById("bestDisplay");
+    if (el) el.textContent = "Best: " + best;
+}  
 
 window.addEventListener("DOMContentLoaded", () => {
     const username = localStorage.getItem("username") || "Player";
@@ -25,6 +31,7 @@ window.addEventListener("DOMContentLoaded", () => {
     if (display) display.textContent = "Player: " + username;
 
     updateStreakDisplay();
+    updateBestDisplay();
 });
 /* -----------------------------------------
    1. RANDOM BLOCK LOADER
