@@ -147,30 +147,36 @@ function handleGuess(guess) {
     const lastFutureClose = futureCandles[futureCandles.length - 1].c;
 
     const priceWentUp = lastFutureClose > lastVisibleClose;
+    const correct = (guess === 'up' && priceWentUp) || (guess === 'down' && !priceWentUp);
 
-    if ((guess === 'up' && priceWentUp) || (guess === 'down' && !priceWentUp)) {
-    // Correct guess
-    streak++;
-    localStorage.setItem(username + "_streak", streak);
-    updateStreakDisplay();
-    showPopup("correct");
-} else {
-    // Wrong guess
-    streak = 0;
-    localStorage.setItem(username + "_streak", streak);
-    updateStreakDisplay();
-    showPopup("wrong");
-}
-  
+    if (correct) {
+        streak++;
+
+        if (streak > best) {
+            best = streak;
+            localStorage.setItem(username + "_best", best);
+            updateBestDisplay();
+        }
+
+        localStorage.setItem(username + "_streak", streak);
+        updateStreakDisplay();
+        showPopup("correct");
+
+    } else {
+        streak = 0;
+        localStorage.setItem(username + "_streak", 0);
+        updateStreakDisplay();
+        showPopup("wrong");
+    }
 
     appendFutureCandles();
     flashAndGlow();
 
-    // Load next block after animation
     setTimeout(() => {
         loadRandomBlock();
     }, 1500);
 }
+
 
 /* -----------------------------------------
    7. APPEND FUTURE CANDLES
