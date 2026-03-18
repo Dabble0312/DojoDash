@@ -1,10 +1,23 @@
 console.log("JS is running");
 
+
+
 let visibleCandles = [];
 let futureCandles = [];
 let gameActive = true;
 let chart;
 let candlestickSeries;
+
+
+// ⭐ Username + streak setup
+let streak = 0;
+let username = localStorage.getItem("username") || "Player";
+
+// Load saved streak for this specific user
+const savedStreak = localStorage.getItem(username + "_streak");
+if (savedStreak) {
+    streak = parseInt(savedStreak);
+}
 
 window.addEventListener("DOMContentLoaded", () => {
     const username = localStorage.getItem("username") || "Player";
