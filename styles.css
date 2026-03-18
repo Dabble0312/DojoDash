@@ -190,3 +190,8 @@ button:active {
     transform: translateY(-2px);
     box-shadow: 0 4px 10px rgba(0,0,0,0.08);
 }
+.home-logo {
+  width: 240px;
+  display: block;
+  margin: 40px auto;
+}
