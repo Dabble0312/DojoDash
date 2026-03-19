@@ -13,7 +13,7 @@ let candlestickSeries;
 
 
 // =========================
-//  WSB REACTIONSS
+// 1. WSB REACTIONSS
 // =========================
 const WSB_GOOD = [
     "🚀 Nice call, you absolute legend.",
@@ -58,31 +58,13 @@ window.addEventListener("DOMContentLoaded", () => {
     updateBestDisplay();
 });
 /* -----------------------------------------
-   1. RANDOM BLOCK LOADER
+   2. RANDOM BLOCK LOADER (UPDATED)
 ----------------------------------------- */
 function loadRandomBlock() {
     const blocks = [
-        "block1.json",
-        "block2.json",
-        "block3.json",
-        "block4.json",
-        "block5.json",
-        "block6.json",
-        "block7.json",
-        "block8.json",
-        "block9.json",
-        "block10.json",
-        "block11.json",
-        "block12.json",
-        "block13.json",
-        "block14.json",
-        "block15.json",
-        "block16.json",
-        "block17.json",
-        "block18.json",
-        "block10.json",
-        "block20.json",
-
+        "window_20170412_0000.json",
+        "window_20170413_0000.json",
+        "window_20170414_0000.json"
     ];
 
     const randomBlock = blocks[Math.floor(Math.random() * blocks.length)];
@@ -90,10 +72,15 @@ function loadRandomBlock() {
 
     fetch(`./data/${randomBlock}`)
         .then(response => response.json())
-        .then(data => {
-            const allCandles = data.candles;
-            visibleCandles = allCandles.slice(0, 10);
-            futureCandles = allCandles.slice(10, 13);
+        .then(block => {
+
+            // ⭐ NEW STRUCTURE
+            visibleCandles = block.candles;   // 30 candles
+            futureCandles  = block.future;    // 3 candles
+
+            console.log("Loaded block:", block.id);
+            console.log("Visible candles:", visibleCandles.length);
+            console.log("Future candles:", futureCandles.length);
 
             resetChart();
             initChart();
@@ -101,14 +88,6 @@ function loadRandomBlock() {
             gameActive = true;
         })
         .catch(error => console.error('Error loading block:', error));
-}
-
-/* -----------------------------------------
-   2. RESET CHART BEFORE NEW ROUND
------------------------------------------ */
-function resetChart() {
-    const chartDiv = document.getElementById('chart');
-    chartDiv.innerHTML = ""; // clears old chart
 }
 
 /* -----------------------------------------
@@ -146,15 +125,17 @@ function initChart() {
         wickVisible: true,
     });
 
-  const visibleDataWithTime = visibleCandles.map((candle, index) => ({
-    time: index + 1,   // 1 through 10
-    open: candle.o,
-    high: candle.h,
-    low: candle.l,
-    close: candle.c,
-}))
+    // ⭐ NEW: map all 30 visible candles
+    const visibleDataWithTime = visibleCandles.map((candle, index) => ({
+        time: index + 1,   // 1 → 30
+        open: candle.o,
+        high: candle.h,
+        low: candle.l,
+        close: candle.c,
+    }));
+
     candlestickSeries.setData(visibleDataWithTime);
-    // temporarily no hollow logic
+
     chart.timeScale().fitContent();
 }
 
@@ -176,13 +157,13 @@ function handleGuess(guess) {
     if (!gameActive) return;
     gameActive = false;
 
+    // ⭐ FIXED: compare last visible to FIRST future candle
     const lastVisibleClose = visibleCandles[visibleCandles.length - 1].c;
-    const lastFutureClose = futureCandles[futureCandles.length - 1].c;
+    const nextFutureClose  = futureCandles[0].c;
 
-    const priceWentUp = lastFutureClose > lastVisibleClose;
+    const priceWentUp = nextFutureClose > lastVisibleClose;
     const correct = (guess === 'up' && priceWentUp) || (guess === 'down' && !priceWentUp);
 
-    // NEW: track correct/wrong
     if (correct) {
         correctCount++;
         streak++;
@@ -210,34 +191,29 @@ function handleGuess(guess) {
     appendFutureCandles();
     flashAndGlow();
 
-    // NEW: increment round count
     roundCount++;
 
-    // NEW: check if run is over
     if (roundCount >= MAX_ROUNDS) {
         setTimeout(() => {
-            endRun();  // NEW FUNCTION
+            endRun();
         }, 1500);
         return;
     }
 
-    // Otherwise continue as usual
     setTimeout(() => {
         loadRandomBlock();
     }, 1500);
 }
-
 
 /* -----------------------------------------
    7. APPEND FUTURE CANDLES
 ----------------------------------------- */
 function appendFutureCandles() {
     const currentData = candlestickSeries.data();
-    const start = Math.floor(Date.now() / 1000);
-    const startIndex = visibleCandles.length;
+    const startIndex = visibleCandles.length;   // 30
 
     const futureData = futureCandles.map((candle, index) => ({
-        time: start + (startIndex + index) * 60,
+        time: startIndex + index + 1,   // 31, 32, 33
         open: candle.o,
         high: candle.h,
         low: candle.l,
