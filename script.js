@@ -343,3 +343,24 @@ function endRun() {
     wrongCount = 0;
     streak = 0;
 }
+
+function showReportCard(stats) {
+    const endScreen = document.getElementById("endScreen");
+    const resultText = document.getElementById("resultText");
+
+    resultText.innerHTML = `
+        You got <strong>${stats.correct}</strong> out of <strong>${MAX_ROUNDS}</strong> predictions correct.<br>
+        Accuracy: <strong>${stats.accuracy}%</strong>
+    `;
+
+    endScreen.classList.remove("hidden");
+
+    document.getElementById("playAgainBtn").onclick = () => {
+        endScreen.classList.add("hidden");
+        resetRun();
+    };
+
+    document.getElementById("homeBtn").onclick = () => {
+        window.location.href = "index.html";
+    };
+}
