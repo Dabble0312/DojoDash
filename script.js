@@ -357,7 +357,7 @@ function showReportCard(stats) {
 
     document.getElementById("playAgainBtn").onclick = () => {
         endScreen.classList.add("hidden");
-        resetRun();
+        startNewRun();
     };
 
     document.getElementById("homeBtn").onclick = () => {
