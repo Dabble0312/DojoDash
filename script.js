@@ -52,6 +52,8 @@ window.addEventListener("DOMContentLoaded", () => {
     const display = document.getElementById("usernameDisplay");
     if (display) display.textContent = "Player: " + username;
 
+    streak = 0;
+    localStorage.setItem(username + "_streak", 0);
     updateStreakDisplay();
     updateBestDisplay();
 });
