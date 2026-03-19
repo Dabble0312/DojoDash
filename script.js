@@ -111,7 +111,6 @@ loadRandomBlock();
 ----------------------------------------- */
 function initChart() {
     const chartDiv = document.getElementById('chart');
-    chartDiv.style.height = '400px';
 
     const chartOptions = {
         layout: {
