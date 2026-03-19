@@ -364,3 +364,14 @@ function showReportCard(stats) {
         window.location.href = "index.html";
     };
 }
+
+function startNewRun() {
+    roundCount = 0;
+    correctCount = 0;
+    wrongCount = 0;
+    streak = 0;
+
+    gameActive = true;
+
+    loadRandomBlock(); // start fresh
+}
