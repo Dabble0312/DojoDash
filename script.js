@@ -72,7 +72,17 @@ function loadRandomBlock() {
         "block8.json",
         "block9.json",
         "block10.json",
-        // add all your blocks here
+        "block11.json",
+        "block12.json",
+        "block13.json",
+        "block14.json",
+        "block15.json",
+        "block16.json",
+        "block17.json",
+        "block18.json",
+        "block10.json",
+        "block20.json",
+
     ];
 
     const randomBlock = blocks[Math.floor(Math.random() * blocks.length)];
