@@ -346,12 +346,9 @@ function endRun() {
 
 function showReportCard(stats) {
     const endScreen = document.getElementById("endScreen");
-    const resultText = document.getElementById("resultText");
+    const resultText = endScreen.querySelector("p");
 
-    resultText.innerHTML = `
-        You got <strong>${stats.correct}</strong> out of <strong>${MAX_ROUNDS}</strong> predictions correct.<br>
-        Accuracy: <strong>${stats.accuracy}%</strong>
-    `;
+    resultText.innerHTML = `You got <strong>${stats.correct}</strong> out of <strong>${MAX_ROUNDS}</strong> predictions correct.<br>Accuracy: <strong>${stats.accuracy}%</strong>`;
 
     endScreen.classList.remove("hidden");
 
@@ -370,6 +367,8 @@ function startNewRun() {
     correctCount = 0;
     wrongCount = 0;
     streak = 0;
+    localStorage.setItem(username + "_streak", 0);
+    updateStreakDisplay();
 
     gameActive = true;
 
