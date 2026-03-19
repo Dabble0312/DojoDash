@@ -1,6 +1,9 @@
 console.log("JS is running");
 
-
+let roundCount = 0;
+let correctCount = 0;
+let wrongCount = 0;
+const MAX_ROUNDS = 10;
 
 let visibleCandles = [];
 let futureCandles = [];
@@ -168,7 +171,9 @@ function handleGuess(guess) {
     const priceWentUp = lastFutureClose > lastVisibleClose;
     const correct = (guess === 'up' && priceWentUp) || (guess === 'down' && !priceWentUp);
 
+    // NEW: track correct/wrong
     if (correct) {
+        correctCount++;
         streak++;
 
         if (streak > best) {
@@ -180,9 +185,10 @@ function handleGuess(guess) {
         localStorage.setItem(username + "_streak", streak);
         updateStreakDisplay();
         showPopup("correct");
-        showWSBPopup(true); 
+        showWSBPopup(true);
 
     } else {
+        wrongCount++;
         streak = 0;
         localStorage.setItem(username + "_streak", 0);
         updateStreakDisplay();
@@ -193,6 +199,18 @@ function handleGuess(guess) {
     appendFutureCandles();
     flashAndGlow();
 
+    // NEW: increment round count
+    roundCount++;
+
+    // NEW: check if run is over
+    if (roundCount >= MAX_ROUNDS) {
+        setTimeout(() => {
+            endRun();  // NEW FUNCTION
+        }, 1500);
+        return;
+    }
+
+    // Otherwise continue as usual
     setTimeout(() => {
         loadRandomBlock();
     }, 1500);
@@ -305,4 +323,23 @@ function getRandomEmoji(type) {
         "assets/images/mascot/loss/loss3.png"
     ];
     return lossEmojis[Math.floor(Math.random() * lossEmojis.length)];
+}
+
+
+function endRun() {
+    gameActive = false;
+
+    // Show your report card popup
+    showReportCard({
+        correct: correctCount,
+        wrong: wrongCount,
+        accuracy: Math.round((correctCount / MAX_ROUNDS) * 100),
+        bestStreak: best
+    });
+
+    // Reset for next run
+    roundCount = 0;
+    correctCount = 0;
+    wrongCount = 0;
+    streak = 0;
 }
