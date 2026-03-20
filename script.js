@@ -140,11 +140,11 @@ function initChart() {
     });
 
     const visibleDataWithTime = visibleCandles.map(candle => ({
-        time: candle.t,   // ⭐ FIXED
-        open: candle.o,
-        high: candle.h,
-        low: candle.l,
-        close: candle.c,
+        time: candle.date,      // ⭐ FIXED
+        open: candle.open,      // ⭐ FIXED
+        high: candle.high,      // ⭐ FIXED
+        low: candle.low,        // ⭐ FIXED
+        close: candle.close,    // ⭐ FIXED
     }));
 
     candlestickSeries.setData(visibleDataWithTime);
