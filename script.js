@@ -1,3 +1,7 @@
+
+
+
+
 console.log("JS is running");
 
 let roundCount = 0;
@@ -61,7 +65,7 @@ window.addEventListener("DOMContentLoaded", () => {
    2. RANDOM BLOCK LOADER (UPDATED)
 ----------------------------------------- */
 function loadRandomBlock() {
-     const blocks = [
+   const blocks = [
         "window_20170403_0000.json",
         "window_20170405_0000.json",
         "window_20170406_0000.json",
@@ -78,7 +82,7 @@ function loadRandomBlock() {
         "window_20170424_0000.json",
         "window_20170425_0000.json"
     ];
-      
+
 
     const randomBlock = blocks[Math.floor(Math.random() * blocks.length)];
     console.log("Loading block:", randomBlock);
@@ -119,24 +123,16 @@ function initChart() {
     const chartOptions = {
         layout: {
             textColor: '#000',
-            background: { type: 'solid', color: '#fff' }, // Lightweight Charts V4 syntax
+            backgroundColor: '#fff',
         },
         timeScale: {
             timeVisible: true,
             secondsVisible: false,
         },
-        // This ensures the price and volume scales don't fight for space
-        rightPriceScale: {
-            scaleMargins: {
-                top: 0.1, // Leave 10% space at top
-                bottom: 0.25, // Leave 25% space at bottom for volume
-            },
-        },
     };
 
     chart = window.LightweightCharts.createChart(chartDiv, chartOptions);
 
-    // 1. Add the Candlestick Series
     candlestickSeries = chart.addCandlestickSeries({
         upColor: '#26a69a',
         downColor: '#ef5350',
@@ -146,11 +142,22 @@ function initChart() {
         wickDownColor: '#ef5350',
         borderVisible: true,
         wickVisible: true,
-        wickWidth: 6,
+        wickWidth: 10,
+
 
     });
 
-   
+    // ⭐ UPDATED KEYS
+    const visibleDataWithTime = visibleCandles.map(candle => ({
+        time: candle.date,      
+        open: candle.open,      
+        high: candle.high,      
+        low: candle.low,        
+        close: candle.close,    
+    }));
+
+    candlestickSeries.setData(visibleDataWithTime);
+    chart.timeScale().fitContent();
 }
 
 /* -----------------------------------------
