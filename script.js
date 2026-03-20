@@ -139,9 +139,8 @@ function initChart() {
         wickVisible: true,
     });
 
-    // ⭐ NEW: map all 30 visible candles
-    const visibleDataWithTime = visibleCandles.map((candle, index) => ({
-        time: index + 1,   // 1 → 30
+    const visibleDataWithTime = visibleCandles.map(candle => ({
+        time: candle.t,   // ⭐ FIXED
         open: candle.o,
         high: candle.h,
         low: candle.l,
