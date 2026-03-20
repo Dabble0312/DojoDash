@@ -150,22 +150,7 @@ function initChart() {
 
     });
 
-    // 2. Add the Volume (Histogram) Series
-    volumeSeries = chart.addHistogramSeries({
-        color: '#26a69a',
-        priceFormat: {
-            type: 'volume',
-        },
-        priceScaleId: '', // Set to empty string to overlay on the main pane
-    });
-
-    // 3. Set the Volume scale margins (forces it to the bottom 20%)
-    volumeSeries.priceScale().applyOptions({
-        scaleMargins: {
-            top: 0.8, // Start at 80% down from the top
-            bottom: 0,
-        },
-    });
+   
 }
 
 /* -----------------------------------------
