@@ -62,41 +62,22 @@ window.addEventListener("DOMContentLoaded", () => {
 ----------------------------------------- */
 function loadRandomBlock() {
     const blocks = [
-        "window_20170403_0000.json",
-        "window_20170405_0000.json",
-        "window_20170406_0000.json",
-        "window_20170407_0000.json",
-        "window_20170410_0000.json",
-        "window_20170411_0000.json",
-        "window_20170412_0000.json",
-        "window_20170413_0000.json",
-        "window_20170417_0000.json",
-        "window_20170418_0000.json",
-        "window_20170419_0000.json",
-        "window_20170420_0000.json",
-        "window_20170421_0000.json",
-        "window_20170424_0000.json",
-        "window_20170425_0000.json"
+        "window_20170407_0000.json" // Added from your context
     ];
-
-
 
     const randomBlock = blocks[Math.floor(Math.random() * blocks.length)];
     console.log("Loading block:", randomBlock);
 
+    // Ensure path is correct relative to your HTML
     fetch(`./data/${randomBlock}`)
         .then(response => response.json())
         .then(block => {
-
-            // ⭐ NEW STRUCTURE
+            // ⭐ UPDATED REFERENCE
             visibleCandles = block.candles;   // 30 candles
             futureCandles  = block.future;    // 3 candles
 
             console.log("Loaded block:", block.id);
-            console.log("Visible candles:", visibleCandles.length);
-            console.log("Future candles:", futureCandles.length);
-
-          
+            
             initChart();
             setupButtons();
             gameActive = true;
@@ -114,6 +95,11 @@ loadRandomBlock();
 ----------------------------------------- */
 function initChart() {
     const chartDiv = document.getElementById('chart');
+
+    // ⭐ FIX: Cleanly re-initialize chart without double creation
+    if (chart) {
+        chart.remove();
+    }
 
     const chartOptions = {
         layout: {
@@ -139,16 +125,16 @@ function initChart() {
         wickVisible: true,
     });
 
+    // ⭐ UPDATED KEYS
     const visibleDataWithTime = visibleCandles.map(candle => ({
-        time: candle.date,      // ⭐ FIXED
-        open: candle.open,      // ⭐ FIXED
-        high: candle.high,      // ⭐ FIXED
-        low: candle.low,        // ⭐ FIXED
-        close: candle.close,    // ⭐ FIXED
+        time: candle.date,      
+        open: candle.open,      
+        high: candle.high,      
+        low: candle.low,        
+        close: candle.close,    
     }));
 
     candlestickSeries.setData(visibleDataWithTime);
-
     chart.timeScale().fitContent();
 }
 
@@ -159,6 +145,7 @@ function setupButtons() {
     const upBtn = document.getElementById('upBtn');
     const downBtn = document.getElementById('downBtn');
 
+    // Resetting onclick to ensure clean handler assignment
     upBtn.onclick = () => handleGuess('up');
     downBtn.onclick = () => handleGuess('down');
 }
@@ -170,9 +157,9 @@ function handleGuess(guess) {
     if (!gameActive) return;
     gameActive = false;
 
-    // ⭐ FIXED: compare last visible to FIRST future candle
-    const lastVisibleClose = visibleCandles[visibleCandles.length - 1].c;
-    const nextFutureClose  = futureCandles[0].c;
+    // ⭐ FIXED: Compare last visible close with FIRST future candle close using correct keys
+    const lastVisibleClose = visibleCandles[visibleCandles.length - 1].close;
+    const nextFutureClose  = futureCandles[0].close;
 
     const priceWentUp = nextFutureClose > lastVisibleClose;
     const correct = (guess === 'up' && priceWentUp) || (guess === 'down' && !priceWentUp);
@@ -180,18 +167,15 @@ function handleGuess(guess) {
     if (correct) {
         correctCount++;
         streak++;
-
         if (streak > best) {
             best = streak;
             localStorage.setItem(username + "_best", best);
             updateBestDisplay();
         }
-
         localStorage.setItem(username + "_streak", streak);
         updateStreakDisplay();
         showPopup("correct");
         showWSBPopup(true);
-
     } else {
         wrongCount++;
         streak = 0;
@@ -213,6 +197,7 @@ function handleGuess(guess) {
         return;
     }
 
+    // ⭐ FIX: Reload block after the guess to progress the game loop
     setTimeout(() => {
         loadRandomBlock();
     }, 1500);
@@ -222,29 +207,29 @@ function handleGuess(guess) {
    7. APPEND FUTURE CANDLES
 ----------------------------------------- */
 function appendFutureCandles() {
-    const currentData = candlestickSeries.data();
-    const startIndex = visibleCandles.length;   // 30
-
-    const futureData = futureCandles.map((candle, index) => ({
-        time: startIndex + index + 1,   // 31, 32, 33
-        open: candle.o,
-        high: candle.h,
-        low: candle.l,
-        close: candle.c,
+    // ⭐ UPDATED KEYS: Reveal future candles with date-based time
+    const futureData = futureCandles.map((candle) => ({
+        time: candle.date,
+        open: candle.open,
+        high: candle.high,
+        low: candle.low,
+        close: candle.close,
     }));
 
-    const allData = currentData.concat(futureData);
+    // Update the series with new data
+    const currentData = candlestickSeries.data();
+    const allData = [...currentData, ...futureData];
     candlestickSeries.setData(allData);
     chart.timeScale().fitContent();
 }
 
 /* -----------------------------------------
-   8. Message Pop-Up of the answer 
+   8. Message Pop-Up
 ----------------------------------------- */
 function showPopup(result) {
     const popup = document.getElementById("resultPopup");
     const text = document.getElementById("popupResultText");
-
+    if (!popup || !text) return;
 
     popup.classList.remove("correct", "wrong", "hidden", "show");
 
@@ -258,21 +243,19 @@ function showPopup(result) {
 
     popup.classList.add("show");
 
-    // Hide after 1.2 seconds
     setTimeout(() => {
         popup.classList.remove("show");
         setTimeout(() => popup.classList.add("hidden"), 400);
     }, 1200);
 }
+
 /* -----------------------------------------
    9. Flash Animation  
 ----------------------------------------- */
 function flashAndGlow() {
     const chartDiv = document.getElementById("chart");
     if (!chartDiv) return;
-
     chartDiv.classList.add("flash-candles");
-
     setTimeout(() => {
         chartDiv.classList.remove("flash-candles");
     }, 800);
@@ -281,7 +264,6 @@ function flashAndGlow() {
 /* -----------------------------------------
    10. WSB Lingo  
 ----------------------------------------- */
-
 function showWSBPopup(isCorrect) {
     const popup = document.getElementById("wsbPopup");
     const text = document.getElementById("wsbText");
@@ -301,7 +283,6 @@ function showWSBPopup(isCorrect) {
     }
 
     popup.classList.add("show");
-
     setTimeout(() => {
         popup.classList.remove("show");
     }, 1200);
@@ -317,7 +298,6 @@ function getRandomEmoji(type) {
         ];
         return profitEmojis[Math.floor(Math.random() * profitEmojis.length)];
     }
-
     const lossEmojis = [
         "assets/images/mascot/loss/loss1.png",
         "assets/images/mascot/loss/loss2.png",
@@ -326,19 +306,14 @@ function getRandomEmoji(type) {
     return lossEmojis[Math.floor(Math.random() * lossEmojis.length)];
 }
 
-
 function endRun() {
     gameActive = false;
-
-    // Show your report card popup
     showReportCard({
         correct: correctCount,
         wrong: wrongCount,
         accuracy: Math.round((correctCount / MAX_ROUNDS) * 100),
         bestStreak: best
     });
-
-    // Reset for next run
     roundCount = 0;
     correctCount = 0;
     wrongCount = 0;
@@ -348,9 +323,9 @@ function endRun() {
 function showReportCard(stats) {
     const endScreen = document.getElementById("endScreen");
     const resultText = endScreen.querySelector("p");
+    if (!endScreen || !resultText) return;
 
     resultText.innerHTML = `You got <strong>${stats.correct}</strong> out of <strong>${MAX_ROUNDS}</strong> predictions correct.<br>Accuracy: <strong>${stats.accuracy}%</strong>`;
-
     endScreen.classList.remove("hidden");
 
     document.getElementById("playAgainBtn").onclick = () => {
@@ -370,8 +345,6 @@ function startNewRun() {
     streak = 0;
     localStorage.setItem(username + "_streak", 0);
     updateStreakDisplay();
-
     gameActive = true;
-
-    loadRandomBlock(); // start fresh
+    loadRandomBlock();
 }
