@@ -119,16 +119,24 @@ function initChart() {
     const chartOptions = {
         layout: {
             textColor: '#000',
-            backgroundColor: '#fff',
+            background: { type: 'solid', color: '#fff' }, // Lightweight Charts V4 syntax
         },
         timeScale: {
             timeVisible: true,
             secondsVisible: false,
         },
+        // This ensures the price and volume scales don't fight for space
+        rightPriceScale: {
+            scaleMargins: {
+                top: 0.1, // Leave 10% space at top
+                bottom: 0.25, // Leave 25% space at bottom for volume
+            },
+        },
     };
 
     chart = window.LightweightCharts.createChart(chartDiv, chartOptions);
 
+    // 1. Add the Candlestick Series
     candlestickSeries = chart.addCandlestickSeries({
         upColor: '#26a69a',
         downColor: '#ef5350',
@@ -139,19 +147,25 @@ function initChart() {
         borderVisible: true,
         wickVisible: true,
         wickWidth: 6,
+
     });
 
-    // ⭐ UPDATED KEYS
-    const visibleDataWithTime = visibleCandles.map(candle => ({
-        time: candle.date,      
-        open: candle.open,      
-        high: candle.high,      
-        low: candle.low,        
-        close: candle.close,    
-    }));
+    // 2. Add the Volume (Histogram) Series
+    volumeSeries = chart.addHistogramSeries({
+        color: '#26a69a',
+        priceFormat: {
+            type: 'volume',
+        },
+        priceScaleId: '', // Set to empty string to overlay on the main pane
+    });
 
-    candlestickSeries.setData(visibleDataWithTime);
-    chart.timeScale().fitContent();
+    // 3. Set the Volume scale margins (forces it to the bottom 20%)
+    volumeSeries.priceScale().applyOptions({
+        scaleMargins: {
+            top: 0.8, // Start at 80% down from the top
+            bottom: 0,
+        },
+    });
 }
 
 /* -----------------------------------------
