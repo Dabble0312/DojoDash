@@ -96,7 +96,7 @@ function loadRandomBlock() {
             console.log("Visible candles:", visibleCandles.length);
             console.log("Future candles:", futureCandles.length);
 
-            resetChart();
+          
             initChart();
             setupButtons();
             gameActive = true;
