@@ -102,7 +102,7 @@ function loadRandomBlock() {
             gameActive = true;
         })
         .catch(error => console.error('Error loading block:', error));
-}
+
 
 /* -----------------------------------------
    3. INITIAL LOAD
