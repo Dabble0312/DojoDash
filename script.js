@@ -142,7 +142,7 @@ function initChart() {
         wickDownColor: '#ef5350',
         borderVisible: true,
         wickVisible: true,
-        wickWidth: 10,
+        wickWidth: 5,
 
 
     });
