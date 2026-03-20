@@ -78,7 +78,7 @@ function loadRandomBlock() {
         "window_20170424_0000.json",
         "window_20170425_0000.json"
     ];
-}
+
 
 
     const randomBlock = blocks[Math.floor(Math.random() * blocks.length)];
@@ -102,7 +102,7 @@ function loadRandomBlock() {
             gameActive = true;
         })
         .catch(error => console.error('Error loading block:', error));
-
+}
 
 /* -----------------------------------------
    3. INITIAL LOAD
