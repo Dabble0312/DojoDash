@@ -8,6 +8,7 @@
     
     <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
     
+    <!-- Supabase must load before script.js -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -37,12 +38,12 @@
         <div class="end-content">
             <h2>Run Complete!</h2>
             <p id="resultText"></p>
-
             <button id="playAgainBtn">Play Again</button>
             <button id="homeBtn">Home</button>
         </div>
     </div>
 
+    <!-- Bug fix: was "script.js" but file was named "script (2).js" — now both match -->
     <script src="script.js"></script>
 </body>
 </html>
