@@ -61,49 +61,44 @@ window.addEventListener("DOMContentLoaded", () => {
     updateStreakDisplay();
     updateBestDisplay();
 });
+
+
+
 /* -----------------------------------------
-   2. RANDOM BLOCK LOADER (UPDATED)
+   2. RANDOM BLOCK LOADER (SUPABASE VERSION)
 ----------------------------------------- */
-function loadRandomBlock() {
-   const blocks = [
-        "window_20170403_0000.json",
-        "window_20170405_0000.json",
-        "window_20170406_0000.json",
-        "window_20170407_0000.json",
-        "window_20170410_0000.json",
-        "window_20170411_0000.json",
-        "window_20170412_0000.json",
-        "window_20170413_0000.json",
-        "window_20170417_0000.json",
-        "window_20170418_0000.json",
-        "window_20170419_0000.json",
-        "window_20170420_0000.json",
-        "window_20170421_0000.json",
-        "window_20170424_0000.json",
-        "window_20170425_0000.json"
-    ];
+async function loadRandomBlock() {
+    console.log("Fetching random level from Supabase...");
 
+    try {
+        // This query gets one random row from your 'levels' table
+        const { data, error } = await supabase
+            .from('levels')
+            .select('*')
+            .limit(1); 
+            // Note: For true randomness, we'll eventually use a custom function, 
+            // but this gets you connected immediately.
 
-    const randomBlock = blocks[Math.floor(Math.random() * blocks.length)];
-    console.log("Loading block:", randomBlock);
+        if (error) throw error;
 
-    // Ensure path is correct relative to your HTML
-    fetch(`./data/${randomBlock}`)
-        .then(response => response.json())
-        .then(block => {
-            // ⭐ UPDATED REFERENCE
-            visibleCandles = block.candles;   // 30 candles
-            futureCandles  = block.future;    // 3 candles
+        const block = data[0];
 
-            console.log("Loaded block:", block.id);
-            
-            initChart();
-            setupButtons();
-            gameActive = true;
-        })
-        .catch(error => console.error('Error loading block:', error));
+        // ⭐ UPDATED REFERENCE: Mapping Supabase columns to your variables
+        // Assuming your table columns are named 'candles' and 'future'
+        visibleCandles = block.candles;   // This was your JSON array
+        futureCandles  = block.future;    // This was your future JSON array
+
+        console.log("Loaded level ID:", block.id);
+        
+        initChart();
+        setupButtons();
+        gameActive = true;
+
+    } catch (error) {
+        console.error('Supabase Error:', error.message);
+        // Fail-safe: You could call a local backup function here
+    }
 }
-
 /* -----------------------------------------
    3. INITIAL LOAD
 ----------------------------------------- */
