@@ -138,7 +138,7 @@ function initChart() {
         wickDownColor: '#ef5350',
         borderVisible: true,
         wickVisible: true,
-        wickWidth: 3,
+        wickWidth: 6,
     });
 
     // ⭐ UPDATED KEYS
