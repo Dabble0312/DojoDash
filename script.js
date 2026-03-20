@@ -61,15 +61,25 @@ window.addEventListener("DOMContentLoaded", () => {
    2. RANDOM BLOCK LOADER (UPDATED)
 ----------------------------------------- */
 function loadRandomBlock() {
-   const blocks = [
-    "window_20170403_0000.json",
-    "window_20170405_0000.json",
-    "window_20170406_0000.json",
-    "window_20170407_0000.json",
-    "window_20170410_0000.json",
-    "window_20170411_0000.json",
-    "window_20170412_0000.json"
-];
+    const blocks = [
+        "window_20170403_0000.json",
+        "window_20170405_0000.json",
+        "window_20170406_0000.json",
+        "window_20170407_0000.json",
+        "window_20170410_0000.json",
+        "window_20170411_0000.json",
+        "window_20170412_0000.json",
+        "window_20170413_0000.json",
+        "window_20170417_0000.json",
+        "window_20170418_0000.json",
+        "window_20170419_0000.json",
+        "window_20170420_0000.json",
+        "window_20170421_0000.json",
+        "window_20170424_0000.json",
+        "window_20170425_0000.json"
+    ];
+}
+
 
     const randomBlock = blocks[Math.floor(Math.random() * blocks.length)];
     console.log("Loading block:", randomBlock);
