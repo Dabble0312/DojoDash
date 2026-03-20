@@ -1,8 +1,10 @@
 
-
-
-
 console.log("JS is running");
+
+// ── Supabase client (Bug fix #1: was missing entirely in game.html context)
+const SUPABASE_URL = 'https://rvbsrpcixttfdrhzmqhz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2YnNycGNpeHR0ZmRyaHptcWh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMDkyMTYsImV4cCI6MjA4OTU4NTIxNn0.GCHzI2PxgMAUP8tdfmg7aq2qpRxRhvxLeXaQpThOaMM';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let roundCount = 0;
 let correctCount = 0;
@@ -17,12 +19,12 @@ let candlestickSeries;
 
 
 // =========================
-// 1. WSB REACTIONSS
+// 1. WSB REACTIONS
 // =========================
 const WSB_GOOD = [
     "🚀 Nice call, you absolute legend.",
     "💎🙌 Diamond hands detected.",
-    "📈 You’re cooking, chef.",
+    "📈 You're cooking, chef.",
     "🔥 Certified candle whisperer.",
     "🧠 Big brain energy."
 ];
@@ -30,14 +32,13 @@ const WSB_GOOD = [
 const WSB_BAD = [
     "🤡 That candle clowned you.",
     "🩸 Paper hands spotted.",
-    "📉 Should’ve stayed in school.",
+    "📉 Should've stayed in school.",
     "💀 Market just slapped you.",
     "🙈 Bruh… not like this."
 ];
 
-// ⭐ Username + streak setup
+// ── Username + streak setup
 let username = localStorage.getItem("username") || "Player";
-
 let streak = parseInt(localStorage.getItem(username + "_streak")) || 0;
 let best   = parseInt(localStorage.getItem(username + "_best"))   || 0;
 
@@ -49,7 +50,7 @@ function updateStreakDisplay() {
 function updateBestDisplay() {
     const el = document.getElementById("bestDisplay");
     if (el) el.textContent = "Best: " + best;
-}  
+}
 
 window.addEventListener("DOMContentLoaded", () => {
     const username = localStorage.getItem("username") || "Player";
@@ -63,42 +64,45 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 
-
 /* -----------------------------------------
    2. RANDOM BLOCK LOADER (SUPABASE VERSION)
 ----------------------------------------- */
 async function loadRandomBlock() {
-    console.log("Fetching random level from Supabase...");
+    console.log("Fetching random block from Supabase...");
 
     try {
-        // This query gets one random row from your 'levels' table
+        // Bug fix #2: was querying 'levels' — correct table/view is 'chart_blocks_safe'
+        // Bug fix #3: added .order + random offset for actual randomness
+        const { count } = await supabase
+            .from('chart_blocks_safe')
+            .select('*', { count: 'exact', head: true });
+
+        const randomOffset = Math.floor(Math.random() * count);
+
         const { data, error } = await supabase
-            .from('levels')
+            .from('chart_blocks_safe')
             .select('*')
-            .limit(1); 
-            // Note: For true randomness, we'll eventually use a custom function, 
-            // but this gets you connected immediately.
+            .range(randomOffset, randomOffset)
+            .limit(1);
 
         if (error) throw error;
 
         const block = data[0];
 
-        // ⭐ UPDATED REFERENCE: Mapping Supabase columns to your variables
-        // Assuming your table columns are named 'candles' and 'future'
-        visibleCandles = block.candles;   // This was your JSON array
-        futureCandles  = block.future;    // This was your future JSON array
+        visibleCandles = block.candles;
+        futureCandles  = block.future;
 
-        console.log("Loaded level ID:", block.id);
-        
+        console.log("Loaded block ID:", block.block_id);
+
         initChart();
         setupButtons();
         gameActive = true;
 
-    } catch (error) {
-        console.error('Supabase Error:', error.message);
-        // Fail-safe: You could call a local backup function here
+    } catch (err) {
+        console.error('Supabase Error:', err.message);
     }
 }
+
 /* -----------------------------------------
    3. INITIAL LOAD
 ----------------------------------------- */
@@ -110,7 +114,6 @@ loadRandomBlock();
 function initChart() {
     const chartDiv = document.getElementById('chart');
 
-    // ⭐ FIX: Cleanly re-initialize chart without double creation
     if (chart) {
         chart.remove();
     }
@@ -138,17 +141,14 @@ function initChart() {
         borderVisible: true,
         wickVisible: true,
         wickWidth: 5,
-
-
     });
 
-    // ⭐ UPDATED KEYS
     const visibleDataWithTime = visibleCandles.map(candle => ({
-        time: candle.date,      
-        open: candle.open,      
-        high: candle.high,      
-        low: candle.low,        
-        close: candle.close,    
+        time: candle.date,
+        open: candle.open,
+        high: candle.high,
+        low: candle.low,
+        close: candle.close,
     }));
 
     candlestickSeries.setData(visibleDataWithTime);
@@ -162,19 +162,20 @@ function setupButtons() {
     const upBtn = document.getElementById('upBtn');
     const downBtn = document.getElementById('downBtn');
 
-    // Resetting onclick to ensure clean handler assignment
     upBtn.onclick = () => handleGuess('up');
     downBtn.onclick = () => handleGuess('down');
 }
 
 /* -----------------------------------------
    6. GUESS LOGIC
+   Bug fix #4: closing brace was missing — appendFutureCandles() and
+   all functions below were accidentally nested inside handleGuess(),
+   making them unreachable. Fixed by closing handleGuess() properly.
 ----------------------------------------- */
 function handleGuess(guess) {
     if (!gameActive) return;
     gameActive = false;
 
-    // ⭐ FIXED: Compare last visible close with FIRST future candle close using correct keys
     const lastVisibleClose = visibleCandles[visibleCandles.length - 1].close;
     const nextFutureClose  = futureCandles[0].close;
 
@@ -214,16 +215,15 @@ function handleGuess(guess) {
         return;
     }
 
-    // ⭐ FIX: Reload block after the guess to progress the game loop
-setTimeout(async () => {
-    await loadRandomBlock();
-}, 1500);
+    setTimeout(async () => {
+        await loadRandomBlock();
+    }, 1500);
+}   // ← this closing brace was missing — everything below was broken
 
 /* -----------------------------------------
    7. APPEND FUTURE CANDLES
 ----------------------------------------- */
 function appendFutureCandles() {
-    // ⭐ UPDATED KEYS: Reveal future candles with date-based time
     const futureData = futureCandles.map((candle) => ({
         time: candle.date,
         open: candle.open,
@@ -232,7 +232,6 @@ function appendFutureCandles() {
         close: candle.close,
     }));
 
-    // Update the series with new data
     const currentData = candlestickSeries.data();
     const allData = [...currentData, ...futureData];
     candlestickSeries.setData(allData);
@@ -266,7 +265,7 @@ function showPopup(result) {
 }
 
 /* -----------------------------------------
-   9. Flash Animation  
+   9. Flash Animation
 ----------------------------------------- */
 function flashAndGlow() {
     const chartDiv = document.getElementById("chart");
@@ -278,7 +277,7 @@ function flashAndGlow() {
 }
 
 /* -----------------------------------------
-   10. WSB Lingo  
+   10. WSB Lingo
 ----------------------------------------- */
 function showWSBPopup(isCorrect) {
     const popup = document.getElementById("wsbPopup");
