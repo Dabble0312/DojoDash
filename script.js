@@ -215,10 +215,9 @@ function handleGuess(guess) {
     }
 
     // ⭐ FIX: Reload block after the guess to progress the game loop
-    setTimeout(() => {
-        loadRandomBlock();
-    }, 1500);
-}
+setTimeout(async () => {
+    await loadRandomBlock();
+}, 1500);
 
 /* -----------------------------------------
    7. APPEND FUTURE CANDLES
