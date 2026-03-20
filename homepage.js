@@ -4,6 +4,7 @@ const SUPABASE_URL = 'https://your-project-id.supabase.co';
 const SUPABASE_KEY = 'your-anon-public-key';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+
 document.getElementById("startBtn").addEventListener("click", async () => {
     const username = document.getElementById("usernameInput").value.trim();
 
