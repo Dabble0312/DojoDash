@@ -112,16 +112,14 @@ loadRandomBlock();
    4. CHART SETUP
 ----------------------------------------- */
 
-// Tracks the locked logical range so the clamp subscriber can reference it
-let lockedRange = { from: 0, to: 33 };
-let rangeSubscribed = false;
+// The logical range we always restore after setData moves it
+let lockedRange = { from: -0.5, to: 32.5 };
 
 function initChart() {
     const chartDiv = document.getElementById('chart');
 
     if (chart) {
         chart.remove();
-        rangeSubscribed = false;
     }
 
     chart = window.LightweightCharts.createChart(chartDiv, {
@@ -132,27 +130,13 @@ function initChart() {
         timeScale: {
             timeVisible: true,
             secondsVisible: false,
-            // Disable the library's own right-edge scroll padding
-            rightOffset: 0,
-            barSpacing: 12,
-            fixLeftEdge: true,
-            fixRightEdge: true,
-            lockVisibleTimeRangeOnResize: true,
+            rightOffset: 5,          // 5-bar buffer on right — landing zone for future candles
+            barSpacing: 14,
+            minBarSpacing: 4,
+            // No fixLeftEdge — it removes the rightOffset buffer
         },
-        // Candlestick occupies top 75%, volume lives in the bottom 25%
         rightPriceScale: {
             scaleMargins: { top: 0.05, bottom: 0.25 },
-        },
-        handleScroll: {
-            mouseWheel: true,
-            pressedMouseMove: true,
-            horzTouchDrag: true,
-            vertTouchDrag: false,
-        },
-        handleScale: {
-            mouseWheel: true,
-            pinch: true,
-            axisPressedMouseMove: false,
         },
     });
 
@@ -200,7 +184,7 @@ function initChart() {
     candlestickSeries.setData(visibleDataWithTime);
     volumeSeries.setData(volumeDataWithTime);
 
-    // ── Lock y-axis using all 33 candles so reveal never rescales
+    // ── Lock y-axis from all 33 candles so reveal never rescales
     const allCandles = [...visibleCandles, ...futureCandles];
     const yMin = Math.min(...allCandles.map(c => c.low))  * 0.995;
     const yMax = Math.max(...allCandles.map(c => c.high)) * 1.005;
@@ -211,37 +195,9 @@ function initChart() {
         }),
     });
 
-    // ── Set the locked range: 30 candles + 3 buffer slots for the reveal
-    lockedRange = { from: 0, to: 32 };
-
-    // Apply it once after setData so the library has data to anchor against
-    chart.timeScale().setVisibleLogicalRange(lockedRange);
-
-    // ── Subscribe to range changes and clamp them back
-    // This is the key fix — every time the library tries to move the viewport
-    // (after setData, after user pan/zoom beyond bounds), we snap it back
-    if (!rangeSubscribed) {
-        chart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
-            if (!range) return;
-
-            const span    = lockedRange.to - lockedRange.from;
-            const current = range.to - range.from;
-
-            // Allow zoom (shrinking the span) but clamp pan to within bounds
-            const newFrom = Math.max(lockedRange.from, Math.min(range.from, lockedRange.to - current));
-            const newTo   = newFrom + current;
-
-            // Only re-lock if meaningfully out of bounds (avoids infinite loop)
-            if (
-                Math.abs(newFrom - range.from) > 0.5 ||
-                range.from < lockedRange.from - 0.5 ||
-                range.to   > lockedRange.to   + 0.5
-            ) {
-                chart.timeScale().setVisibleLogicalRange({ from: newFrom, to: newTo });
-            }
-        });
-        rangeSubscribed = true;
-    }
+    // scrollToRealTime() puts the most recent candle at the right edge
+    // with rightOffset bars of breathing room — no refit, no jump
+    chart.timeScale().scrollToRealTime();
 }
 
 /* -----------------------------------------
@@ -343,8 +299,9 @@ function appendFutureCandles() {
     }));
     volumeSeries.setData([...currentVolume, ...futureVolume]);
 
-    // Re-apply the locked range after setData — the library resets it on every setData call
-    chart.timeScale().setVisibleLogicalRange(lockedRange);
+    // scrollToRealTime keeps the viewport anchored to the right edge
+    // rightOffset ensures the buffer space remains after the reveal
+    chart.timeScale().scrollToRealTime();
 }
 
 /* -----------------------------------------
