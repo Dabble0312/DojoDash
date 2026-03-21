@@ -6,24 +6,24 @@
     <title>DojiDash</title>
     <link rel="stylesheet" href="styles.css">
 </head>
-
+ 
 <body>
-
+ 
     <div class="home-container">
         <img src="assets/images/Logo.gif" class="home-logo">
         <h1 class="app-title">DojiDash</h1>
-
+ 
         <p class="tagline">
             Predict the next candle. Build your streak. Sharpen your intuition.
         </p>
-
+ 
         <input 
             id="usernameInput" 
             type="text" 
             placeholder="Enter your name"
             class="username-input"
         >
-
+ 
         <button id="startBtn" class="start-button">
             Start Game
         </button>
@@ -35,11 +35,15 @@
         <p class="footer-text">
             A tiny experiment in intuition, probability, and fun.
         </p>
-
+ 
     </div>
-
+ 
+    <!-- 1. Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
+    <!-- 2. Shared client — must come before homepage.js -->
+    <script src="supabase.js"></script>
+    <!-- 3. Page logic -->
     <script src="homepage.js"></script>
 </body>
 </html>
+ 
