@@ -1,10 +1,13 @@
-
 console.log("JS is running");
 
-// ── Supabase client (Bug fix #1: was missing entirely in game.html context)
-const SUPABASE_URL = 'https://rvbsrpcixttfdrhzmqhz.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2YnNycGNpeHR0ZmRyaHptcWh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMDkyMTYsImV4cCI6MjA4OTU4NTIxNn0.GCHzI2PxgMAUP8tdfmg7aq2qpRxRhvxLeXaQpThOaMM';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// ── Supabase client is declared in homepage.js (index.html) and re-created
+// here for game.html, which does NOT load homepage.js.
+// Using a check to avoid re-declaration if somehow both scripts are loaded.
+if (typeof supabase === 'undefined') {
+    const SUPABASE_URL = 'https://rvbsrpcixttfdrhzmqhz.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2YnNycGNpeHR0ZmRyaHptcWh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMDkyMTYsImV4cCI6MjA4OTU4NTIxNn0.GCHzI2PxgMAUP8tdfmg7aq2qpRxRhvxLeXaQpThOaMM';
+    var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
 
 let roundCount = 0;
 let correctCount = 0;
