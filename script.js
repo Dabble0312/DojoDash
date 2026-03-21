@@ -1,20 +1,20 @@
 console.log("JS is running");
-
+ 
 // supabase client is declared in supabase.js — loaded before this file in game.html
-
+ 
 let roundCount = 0;
 let correctCount = 0;
 let wrongCount = 0;
 const MAX_ROUNDS = 10;
-
+ 
 let visibleCandles = [];
 let futureCandles = [];
 let gameActive = true;
 let chart;
 let candlestickSeries;
 let volumeSeries;
-
-
+ 
+ 
 // =========================
 // 1. WSB REACTIONS
 // =========================
@@ -25,7 +25,7 @@ const WSB_GOOD = [
     "🔥 Certified candle whisperer.",
     "🧠 Big brain energy."
 ];
-
+ 
 const WSB_BAD = [
     "🤡 That candle clowned you.",
     "🩸 Paper hands spotted.",
@@ -33,91 +33,91 @@ const WSB_BAD = [
     "💀 Market just slapped you.",
     "🙈 Bruh… not like this."
 ];
-
+ 
 // ── Username + streak setup
 let username = localStorage.getItem("username") || "Player";
 let streak = parseInt(localStorage.getItem(username + "_streak")) || 0;
 let best   = parseInt(localStorage.getItem(username + "_best"))   || 0;
-
+ 
 function updateStreakDisplay() {
     const el = document.getElementById("streakDisplay");
     if (el) el.textContent = "Streak: " + streak;
 }
-
+ 
 function updateBestDisplay() {
     const el = document.getElementById("bestDisplay");
     if (el) el.textContent = "Best: " + best;
 }
-
+ 
 window.addEventListener("DOMContentLoaded", () => {
     const username = localStorage.getItem("username") || "Player";
     const display = document.getElementById("usernameDisplay");
     if (display) display.textContent = "Player: " + username;
-
+ 
     streak = 0;
     localStorage.setItem(username + "_streak", 0);
     updateStreakDisplay();
     updateBestDisplay();
 });
-
-
+ 
+ 
 /* -----------------------------------------
    2. RANDOM BLOCK LOADER (SUPABASE VERSION)
 ----------------------------------------- */
 async function loadRandomBlock() {
     console.log("Fetching random block from Supabase...");
-
+ 
     try {
         const { data, error } = await supabase
             .from('chart_blocks')
             .select('id, block_id, candles, future, window_start')
             .order('id')
             .limit(1000);
-
+ 
         if (error) throw error;
-
+ 
         if (!data || data.length === 0) {
             console.error('No blocks returned from Supabase. Check RLS policy on chart_blocks.');
             return;
         }
-
+ 
         // Pick a random block from whatever was returned
         const block = data[Math.floor(Math.random() * data.length)];
-
+ 
         if (!block.candles || !block.future) {
             console.error('Block is missing candles or future field:', block);
             return;
         }
-
+ 
         visibleCandles = block.candles;
         futureCandles  = block.future;
-
+ 
         console.log("Loaded block ID:", block.block_id, "| Total available:", data.length);
-
+ 
         initChart();
         setupButtons();
         gameActive = true;
-
+ 
     } catch (err) {
         console.error('Supabase Error:', err.message);
     }
 }
-
+ 
 /* -----------------------------------------
    3. INITIAL LOAD
 ----------------------------------------- */
 loadRandomBlock();
-
+ 
 /* -----------------------------------------
    4. CHART SETUP
 ----------------------------------------- */
 function initChart() {
     const chartDiv = document.getElementById('chart');
-
+ 
     if (chart) {
         chart.remove();
     }
-
+ 
     chart = window.LightweightCharts.createChart(chartDiv, {
         layout: {
             textColor: '#000',
@@ -133,7 +133,7 @@ function initChart() {
             { height: 0.22 },
         ],
     });
-
+ 
     // ── Candlestick series (pane 0, default)
     candlestickSeries = chart.addCandlestickSeries({
         upColor: '#26a69a',
@@ -146,20 +146,20 @@ function initChart() {
         wickVisible: true,
         wickWidth: 5,
     });
-
+ 
     // ── Volume histogram series (pane 1)
     volumeSeries = chart.addHistogramSeries({
         priceFormat: { type: 'volume' },
         priceScaleId: 'volume',
         pane: 1,
     });
-
+ 
     // Remove the volume price scale from the right axis so it stays clean
     chart.priceScale('volume').applyOptions({
         scaleMargins: { top: 0.1, bottom: 0 },
         visible: false,
     });
-
+ 
     const visibleDataWithTime = visibleCandles.map(candle => ({
         time:  candle.date.slice(0, 10),
         open:  candle.open,
@@ -167,30 +167,47 @@ function initChart() {
         low:   candle.low,
         close: candle.close,
     }));
-
+ 
     // Color each volume bar green or red based on candle direction
     const volumeDataWithTime = visibleCandles.map(candle => ({
         time:  candle.date.slice(0, 10),
         value: candle.volume,
         color: candle.bullish === 1 ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
     }));
-
+ 
     candlestickSeries.setData(visibleDataWithTime);
     volumeSeries.setData(volumeDataWithTime);
-    chart.timeScale().fitContent();
+ 
+    // ── Fix 1: Lock x-axis to exactly the 30-candle window
+    chart.timeScale().setVisibleRange({
+        from: visibleCandles[0].date.slice(0, 10),
+        to:   visibleCandles[visibleCandles.length - 1].date.slice(0, 10),
+    });
+ 
+    // ── Fix 2: Pre-calculate y-axis from ALL 33 candles (visible + future)
+    // so the reveal never causes a rescale or jump
+    const allCandles = [...visibleCandles, ...futureCandles];
+    const yMin = Math.min(...allCandles.map(c => c.low))  * 0.995;
+    const yMax = Math.max(...allCandles.map(c => c.high)) * 1.005;
+ 
+    candlestickSeries.applyOptions({
+        autoscaleInfoProvider: () => ({
+            priceRange: { minValue: yMin, maxValue: yMax },
+        }),
+    });
 }
-
+ 
 /* -----------------------------------------
    5. BUTTONS
 ----------------------------------------- */
 function setupButtons() {
     const upBtn = document.getElementById('upBtn');
     const downBtn = document.getElementById('downBtn');
-
+ 
     upBtn.onclick = () => handleGuess('up');
     downBtn.onclick = () => handleGuess('down');
 }
-
+ 
 /* -----------------------------------------
    6. GUESS LOGIC
    Bug fix #4: closing brace was missing — appendFutureCandles() and
@@ -200,13 +217,13 @@ function setupButtons() {
 function handleGuess(guess) {
     if (!gameActive) return;
     gameActive = false;
-
+ 
     const lastVisibleClose = visibleCandles[visibleCandles.length - 1].close;
     const nextFutureClose  = futureCandles[0].close;
-
+ 
     const priceWentUp = nextFutureClose > lastVisibleClose;
     const correct = (guess === 'up' && priceWentUp) || (guess === 'down' && !priceWentUp);
-
+ 
     if (correct) {
         correctCount++;
         streak++;
@@ -227,24 +244,24 @@ function handleGuess(guess) {
         showPopup("wrong");
         showWSBPopup(false);
     }
-
+ 
     appendFutureCandles();
     flashAndGlow();
-
+ 
     roundCount++;
-
+ 
     if (roundCount >= MAX_ROUNDS) {
         setTimeout(() => {
             endRun();
         }, 1500);
         return;
     }
-
+ 
     setTimeout(async () => {
         await loadRandomBlock();
     }, 1500);
 }   // ← this closing brace was missing — everything below was broken
-
+ 
 /* -----------------------------------------
    7. APPEND FUTURE CANDLES
 ----------------------------------------- */
@@ -265,7 +282,7 @@ function appendFutureCandles() {
         close: candle.close,
     }));
     candlestickSeries.setData([...currentCandles, ...futureCandle]);
-
+ 
     // ── Volume data: visible + future combined
     const currentVolume = visibleCandles.map((candle) => ({
         time:  candle.date.slice(0, 10),
@@ -278,10 +295,10 @@ function appendFutureCandles() {
         color: candle.bullish === 1 ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
     }));
     volumeSeries.setData([...currentVolume, ...futureVolume]);
-
-    chart.timeScale().fitContent();
+ 
+    // No fitContent() here — keeping the viewport locked so reveal is smooth
 }
-
+ 
 /* -----------------------------------------
    8. Message Pop-Up
 ----------------------------------------- */
@@ -289,9 +306,9 @@ function showPopup(result) {
     const popup = document.getElementById("resultPopup");
     const text = document.getElementById("popupResultText");
     if (!popup || !text) return;
-
+ 
     popup.classList.remove("correct", "wrong", "hidden", "show");
-
+ 
     if (result === "correct") {
         text.textContent = "Correct!";
         popup.classList.add("correct");
@@ -299,15 +316,15 @@ function showPopup(result) {
         text.textContent = "Wrong!";
         popup.classList.add("wrong");
     }
-
+ 
     popup.classList.add("show");
-
+ 
     setTimeout(() => {
         popup.classList.remove("show");
         setTimeout(() => popup.classList.add("hidden"), 400);
     }, 1200);
 }
-
+ 
 /* -----------------------------------------
    9. Flash Animation
 ----------------------------------------- */
@@ -319,7 +336,7 @@ function flashAndGlow() {
         chartDiv.classList.remove("flash-candles");
     }, 800);
 }
-
+ 
 /* -----------------------------------------
    10. WSB Lingo
 ----------------------------------------- */
@@ -328,9 +345,9 @@ function showWSBPopup(isCorrect) {
     const text = document.getElementById("wsbText");
     const emoji = document.getElementById("mascotEmoji");
     if (!popup || !text || !emoji) return;
-
+ 
     popup.classList.remove("good", "bad", "show");
-
+ 
     if (isCorrect) {
         text.textContent = WSB_GOOD[Math.floor(Math.random() * WSB_GOOD.length)];
         emoji.src = getRandomEmoji("profit");
@@ -340,13 +357,13 @@ function showWSBPopup(isCorrect) {
         emoji.src = getRandomEmoji("loss");
         popup.classList.add("bad");
     }
-
+ 
     popup.classList.add("show");
     setTimeout(() => {
         popup.classList.remove("show");
     }, 1200);
 }
-
+ 
 function getRandomEmoji(type) {
     if (type === "profit") {
         const profitEmojis = [
@@ -364,7 +381,7 @@ function getRandomEmoji(type) {
     ];
     return lossEmojis[Math.floor(Math.random() * lossEmojis.length)];
 }
-
+ 
 function endRun() {
     gameActive = false;
     showReportCard({
@@ -378,25 +395,25 @@ function endRun() {
     wrongCount = 0;
     streak = 0;
 }
-
+ 
 function showReportCard(stats) {
     const endScreen = document.getElementById("endScreen");
     const resultText = endScreen.querySelector("p");
     if (!endScreen || !resultText) return;
-
+ 
     resultText.innerHTML = `You got <strong>${stats.correct}</strong> out of <strong>${MAX_ROUNDS}</strong> predictions correct.<br>Accuracy: <strong>${stats.accuracy}%</strong>`;
     endScreen.classList.remove("hidden");
-
+ 
     document.getElementById("playAgainBtn").onclick = () => {
         endScreen.classList.add("hidden");
         startNewRun();
     };
-
+ 
     document.getElementById("homeBtn").onclick = () => {
         window.location.href = "index.html";
     };
 }
-
+ 
 function startNewRun() {
     roundCount = 0;
     correctCount = 0;
