@@ -249,41 +249,51 @@ function handleGuess(guess) {
         return;
     }
 
-    setTimeout(async () => { await loadRandomBlock(); }, 1500);
+    setTimeout(async () => { await loadRandomBlock(); }, 2800);
 }
 
 /* -----------------------------------------
-   7. APPEND FUTURE CANDLES
+   7. APPEND FUTURE CANDLES — one by one with delay
+   Each future candle is revealed 600ms apart, simulating a live chart.
+   Candles and volume bars appear together per bar.
 ----------------------------------------- */
 function appendFutureCandles() {
-    const currentCandles = visibleCandles.map(c => ({
+    // Build the base visible data once — same for all three reveals
+    const baseCandles = visibleCandles.map(c => ({
         time:  c.date.slice(0, 10),
         open:  c.open,
         high:  c.high,
         low:   c.low,
         close: c.close,
     }));
-    const futureData = futureCandles.map(c => ({
+    const baseVolume = visibleCandles.map(c => ({
         time:  c.date.slice(0, 10),
-        open:  c.open,
-        high:  c.high,
-        low:   c.low,
-        close: c.close,
+        value: c.volume,
+        color: c.bullish === 1 ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
     }));
-    candlestickSeries.setData([...currentCandles, ...futureData]);
 
-    const currentVolume = visibleCandles.map(c => ({
-        time:  c.date.slice(0, 10),
-        value: c.volume,
-        color: c.bullish === 1 ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
-    }));
-    const futureVolume = futureCandles.map(c => ({
-        time:  c.date.slice(0, 10),
-        value: c.volume,
-        color: c.bullish === 1 ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
-    }));
-    volumeSeries.setData([...currentVolume, ...futureVolume]);
-    // No fitContent, no scrollTo — let the chart sit exactly where it is
+    // Reveal each future candle one at a time, 600ms apart
+    futureCandles.forEach((candle, i) => {
+        setTimeout(() => {
+            // Add candles revealed so far (0→1, then 0→2, then 0→3)
+            const revealedCandles = futureCandles.slice(0, i + 1).map(c => ({
+                time:  c.date.slice(0, 10),
+                open:  c.open,
+                high:  c.high,
+                low:   c.low,
+                close: c.close,
+            }));
+            const revealedVolume = futureCandles.slice(0, i + 1).map(c => ({
+                time:  c.date.slice(0, 10),
+                value: c.volume,
+                color: c.bullish === 1 ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
+            }));
+
+            candlestickSeries.setData([...baseCandles, ...revealedCandles]);
+            volumeSeries.setData([...baseVolume, ...revealedVolume]);
+
+        }, i * 600);   // 0ms, 600ms, 1200ms
+    });
 }
 
 /* -----------------------------------------
