@@ -31,6 +31,20 @@
   --button-radius: 12px;
   --card-radius: 16px;
   --modal-radius: 20px;
+
+  /* Additional spacing helpers */
+  --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --transition-ease: 0.4s ease;
+
+  /* Component widths */
+  --logo-width: 240px;
+  --input-width: 280px;
+  --wsb-width: 320px;
+
+  /* Additional animation durations */
+  --animation-fade: 0.8s ease;
+  --animation-flash: 0.6s ease-in-out;
 }
 
 /* --- BASE STYLES --- */
@@ -54,20 +68,20 @@ body {
 }
 
 .home-logo {
-  width: 240px;
+  width: var(--logo-width);
   display: block;
   margin-bottom: var(--space-xl);
-  animation: fadeIn 0.8s ease;
+  animation: fadeIn var(--animation-fade);
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(var(--space-xs)); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .username-input {
     padding: var(--space-md);
-    width: 280px;
+    width: var(--input-width);
     border-radius: var(--button-radius);
     border: 1px solid rgba(0,0,0,0.1);
     margin-bottom: var(--space-md);
@@ -88,7 +102,7 @@ body {
 
 .username-display { font-weight: var(--font-weight-regular); color: #64748b; font-size: 0.9rem; }
 .streak-display { font-size: 1.5rem; color: var(--text-main); font-weight: 800; }
-.best-display { font-size: 0.85rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: var(--space-md); }
+.best-display { font-size: var(--font-caption); color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: var(--space-lg); }
 
 /* --- BUTTONS --- */
 button {
@@ -99,18 +113,18 @@ button {
   font-weight: 700;
   text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: var(--transition-fast);
 }
 
-button.up { background: var(--emerald); color: white; margin-right: 10px; }
+button.up { background: var(--emerald); color: white; margin-right: var(--space-sm); }
 button.down { background: var(--rose); color: white; }
 
 button:hover {
-  transform: translateY(-2px);
+  transform: translateY(calc(var(--space-xxs) * -0.5));
   filter: brightness(1.1);
 }
 
-button:active { transform: translateY(1px); }
+button:active { transform: translateY(var(--space-xxs) * 0.25); }
 
 /* --- POPUPS & MODALS --- */
 .hidden {
@@ -125,12 +139,12 @@ button:active { transform: translateY(1px); }
   transform: translate(-50%, -50%) scale(0.9);
   padding: var(--space-lg) calc(var(--space-lg) * 2);
   border-radius: var(--modal-radius);
-  font-size: 32px;
+  font-size: var(--font-h1);
   font-weight: 800;
   color: white;
   opacity: 0;
   pointer-events: none;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: var(--transition-smooth);
   z-index: 9999;
   backdrop-filter: blur(8px);
 }
@@ -149,7 +163,7 @@ button:active { transform: translateY(1px); }
   position: fixed;
   bottom: var(--space-lg);
   right: var(--space-lg);
-  width: 320px;
+  width: var(--wsb-width);
   background: white;
   padding: var(--space-md);
   border-radius: var(--card-radius);
@@ -160,8 +174,8 @@ button:active { transform: translateY(1px); }
   gap: var(--space-sm);
   z-index: 9999;
   opacity: 0;
-  transform: translateX(50px);
-  transition: all 0.4s ease;
+  transform: translateX(var(--space-lg));
+  transition: var(--transition-ease);
   pointer-events: none;
 }
 
@@ -171,8 +185,8 @@ button:active { transform: translateY(1px); }
   display: flex !important;
 }
 
-.wsb-emoji { width: 80px; height: auto; }
-.wsb-text { font-weight: 700; font-size: 0.9rem; color: #1e293b; }
+.wsb-emoji { width: calc(var(--space-lg) * 3.3); height: auto; }
+.wsb-text { font-weight: var(--font-weight-bold); font-size: 0.9rem; color: #1e293b; }
 
 /* --- END SCREEN --- */
 .end-screen {
@@ -198,7 +212,7 @@ button:active { transform: translateY(1px); }
     color: var(--text-main);
 }
 
-#playAgainBtn { background: var(--emerald); color: white; width: 100%; margin-bottom: 10px; }
+#playAgainBtn { background: var(--emerald); color: white; width: 100%; margin-bottom: var(--space-sm); }
 #homeBtn { background: #64748b; color: white; width: 100%; }
 
 /* --- CHART ANIMATION --- */
@@ -209,5 +223,5 @@ button:active { transform: translateY(1px); }
 }
 
 .flash-candles {
-  animation: flash 0.6s ease-in-out;
+  animation: flash var(--animation-flash);
 }
