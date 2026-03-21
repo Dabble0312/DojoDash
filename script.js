@@ -67,28 +67,31 @@ async function loadRandomBlock() {
     console.log("Fetching random block from Supabase...");
 
     try {
-        // Bug fix #2: was querying 'levels' — correct table/view is 'chart_blocks_safe'
-        // Bug fix #3: added .order + random offset for actual randomness
-        const { count } = await supabase
-            .from('chart_blocks')
-            .select('*', { count: 'exact', head: true });
-
-        const randomOffset = Math.floor(Math.random() * count);
-
         const { data, error } = await supabase
             .from('chart_blocks')
             .select('id, block_id, candles, future, window_start')
-            .range(randomOffset, randomOffset)
-            .limit(1);
+            .order('id')
+            .limit(1000);
 
         if (error) throw error;
 
-        const block = data[0];
+        if (!data || data.length === 0) {
+            console.error('No blocks returned from Supabase. Check RLS policy on chart_blocks.');
+            return;
+        }
+
+        // Pick a random block from whatever was returned
+        const block = data[Math.floor(Math.random() * data.length)];
+
+        if (!block.candles || !block.future) {
+            console.error('Block is missing candles or future field:', block);
+            return;
+        }
 
         visibleCandles = block.candles;
         futureCandles  = block.future;
 
-        console.log("Loaded block ID:", block.block_id);
+        console.log("Loaded block ID:", block.block_id, "| Total available:", data.length);
 
         initChart();
         setupButtons();
@@ -140,7 +143,7 @@ function initChart() {
     });
 
     const visibleDataWithTime = visibleCandles.map(candle => ({
-        time: candle.date,
+        time: candle.date.slice(0, 10),   // strip time component — chart needs "YYYY-MM-DD"
         open: candle.open,
         high: candle.high,
         low: candle.low,
@@ -221,7 +224,7 @@ function handleGuess(guess) {
 ----------------------------------------- */
 function appendFutureCandles() {
     const futureData = futureCandles.map((candle) => ({
-        time: candle.date,
+        time: candle.date.slice(0, 10),   // strip time component — chart needs "YYYY-MM-DD"
         open: candle.open,
         high: candle.high,
         low: candle.low,
@@ -230,7 +233,7 @@ function appendFutureCandles() {
 
     // .data() was removed in Lightweight Charts v4 — rebuild from visibleCandles instead
     const currentData = visibleCandles.map((candle) => ({
-        time: candle.date,
+        time: candle.date.slice(0, 10),   // strip time component — chart needs "YYYY-MM-DD"
         open: candle.open,
         high: candle.high,
         low: candle.low,
