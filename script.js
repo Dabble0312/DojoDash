@@ -12,6 +12,7 @@ let futureCandles = [];
 let gameActive = true;
 let chart;
 let candlestickSeries;
+let volumeSeries;
 
 
 // =========================
@@ -117,7 +118,7 @@ function initChart() {
         chart.remove();
     }
 
-    const chartOptions = {
+    chart = window.LightweightCharts.createChart(chartDiv, {
         layout: {
             textColor: '#000',
             backgroundColor: '#fff',
@@ -126,10 +127,14 @@ function initChart() {
             timeVisible: true,
             secondsVisible: false,
         },
-    };
+        // Give the volume pane 20% of the total height
+        panes: [
+            { height: 0.78 },
+            { height: 0.22 },
+        ],
+    });
 
-    chart = window.LightweightCharts.createChart(chartDiv, chartOptions);
-
+    // ── Candlestick series (pane 0, default)
     candlestickSeries = chart.addCandlestickSeries({
         upColor: '#26a69a',
         downColor: '#ef5350',
@@ -142,15 +147,36 @@ function initChart() {
         wickWidth: 5,
     });
 
+    // ── Volume histogram series (pane 1)
+    volumeSeries = chart.addHistogramSeries({
+        priceFormat: { type: 'volume' },
+        priceScaleId: 'volume',
+        pane: 1,
+    });
+
+    // Remove the volume price scale from the right axis so it stays clean
+    chart.priceScale('volume').applyOptions({
+        scaleMargins: { top: 0.1, bottom: 0 },
+        visible: false,
+    });
+
     const visibleDataWithTime = visibleCandles.map(candle => ({
-        time: candle.date.slice(0, 10),   // strip time component — chart needs "YYYY-MM-DD"
-        open: candle.open,
-        high: candle.high,
-        low: candle.low,
+        time:  candle.date.slice(0, 10),
+        open:  candle.open,
+        high:  candle.high,
+        low:   candle.low,
         close: candle.close,
     }));
 
+    // Color each volume bar green or red based on candle direction
+    const volumeDataWithTime = visibleCandles.map(candle => ({
+        time:  candle.date.slice(0, 10),
+        value: candle.volume,
+        color: candle.bullish === 1 ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
+    }));
+
     candlestickSeries.setData(visibleDataWithTime);
+    volumeSeries.setData(volumeDataWithTime);
     chart.timeScale().fitContent();
 }
 
@@ -223,23 +249,36 @@ function handleGuess(guess) {
    7. APPEND FUTURE CANDLES
 ----------------------------------------- */
 function appendFutureCandles() {
-    const futureData = futureCandles.map((candle) => ({
-        time: candle.date.slice(0, 10),   // strip time component — chart needs "YYYY-MM-DD"
-        open: candle.open,
-        high: candle.high,
-        low: candle.low,
+    // ── Candle data: visible + future combined
+    const currentCandles = visibleCandles.map((candle) => ({
+        time:  candle.date.slice(0, 10),
+        open:  candle.open,
+        high:  candle.high,
+        low:   candle.low,
         close: candle.close,
     }));
+    const futureCandle = futureCandles.map((candle) => ({
+        time:  candle.date.slice(0, 10),
+        open:  candle.open,
+        high:  candle.high,
+        low:   candle.low,
+        close: candle.close,
+    }));
+    candlestickSeries.setData([...currentCandles, ...futureCandle]);
 
-    // .data() was removed in Lightweight Charts v4 — rebuild from visibleCandles instead
-    const currentData = visibleCandles.map((candle) => ({
-        time: candle.date.slice(0, 10),   // strip time component — chart needs "YYYY-MM-DD"
-        open: candle.open,
-        high: candle.high,
-        low: candle.low,
-        close: candle.close,
+    // ── Volume data: visible + future combined
+    const currentVolume = visibleCandles.map((candle) => ({
+        time:  candle.date.slice(0, 10),
+        value: candle.volume,
+        color: candle.bullish === 1 ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
     }));
-    candlestickSeries.setData([...currentData, ...futureData]);
+    const futureVolume = futureCandles.map((candle) => ({
+        time:  candle.date.slice(0, 10),
+        value: candle.volume,
+        color: candle.bullish === 1 ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
+    }));
+    volumeSeries.setData([...currentVolume, ...futureVolume]);
+
     chart.timeScale().fitContent();
 }
 
