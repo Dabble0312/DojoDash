@@ -256,18 +256,41 @@ function handleGuess(guess) {
     awaitingGuess = false;
     guessCount++;
 
-    // Compare last revealed candle's close to the next future candle's close
-    const lastRevealed   = revealedSoFar[revealedSoFar.length - 1];
-    const nextFuture     = futureCandles[revealIndex];  // not yet revealed
+    const lastRevealed = revealedSoFar[revealedSoFar.length - 1];
+    const nextFuture   = futureCandles[revealIndex];  // not yet revealed
 
     if (!nextFuture) {
-        // No more future candles — session complete
         endSession("complete");
         return;
     }
 
+    // ── Direction check
     const priceWentUp = nextFuture.close > lastRevealed.close;
     const correct     = (guess === 'up' && priceWentUp) || (guess === 'down' && !priceWentUp);
+
+    // ── Price target check (optional — blank input is fine)
+    const priceInput    = document.getElementById('priceTarget');
+    const targetValue   = priceInput ? parseFloat(priceInput.value) : NaN;
+    const hasTarget     = !isNaN(targetValue) && targetValue > 0;
+    const actualClose   = nextFuture.close;
+
+    let priceFeedback = '';
+    if (hasTarget) {
+        const diff    = actualClose - targetValue;
+        const diffPct = ((Math.abs(diff) / actualClose) * 100).toFixed(1);
+
+        if (Math.abs(diff) / actualClose < 0.005) {
+            // Within 0.5% — essentially spot on
+            priceFeedback = `🎯 Spot on! Target ₹${targetValue.toFixed(2)} vs actual ₹${actualClose.toFixed(2)}`;
+        } else if (diff > 0) {
+            priceFeedback = `📈 Actual was ${diffPct}% higher than your target (₹${targetValue.toFixed(2)} → ₹${actualClose.toFixed(2)})`;
+        } else {
+            priceFeedback = `📉 Actual was ${diffPct}% lower than your target (₹${targetValue.toFixed(2)} → ₹${actualClose.toFixed(2)})`;
+        }
+
+        // Clear the input for next round
+        priceInput.value = '';
+    }
 
     if (correct) {
         correctCount++;
@@ -284,19 +307,28 @@ function handleGuess(guess) {
         }
     }
 
+    // Show price feedback below the status line
+    showPriceFeedback(priceFeedback);
     updateHUD();
 
-    // Check if all future candles exhausted after this guess
     if (revealIndex >= futureCandles.length) {
         setTimeout(() => endSession("complete"), 1200);
         return;
     }
 
-    // Re-enable Reveal button after a short pause
     setTimeout(() => {
         setButtonState("reveal");
         showStatus("");
-    }, 1000);
+        showPriceFeedback("");
+    }, 2000);
+}
+
+/* -----------------------------------------
+   6b. PRICE FEEDBACK DISPLAY
+----------------------------------------- */
+function showPriceFeedback(msg) {
+    const el = document.getElementById('priceFeedback');
+    if (el) el.textContent = msg;
 }
 
 
@@ -308,9 +340,10 @@ function handleGuess(guess) {
    "guess"     — UP/DOWN active, Reveal dimmed
 ----------------------------------------- */
 function setButtonState(state) {
-    const revealBtn = document.getElementById('revealBtn');
-    const upBtn     = document.getElementById('upBtn');
-    const downBtn   = document.getElementById('downBtn');
+    const revealBtn  = document.getElementById('revealBtn');
+    const upBtn      = document.getElementById('upBtn');
+    const downBtn    = document.getElementById('downBtn');
+    const priceInput = document.getElementById('priceTarget');
 
     if (!revealBtn || !upBtn || !downBtn) return;
 
@@ -321,6 +354,7 @@ function setButtonState(state) {
         downBtn.disabled   = true;
         upBtn.classList.add('btn-dim');
         downBtn.classList.add('btn-dim');
+        if (priceInput) { priceInput.disabled = true;  priceInput.classList.add('btn-dim'); }
     } else if (state === "revealing") {
         revealBtn.disabled = true;
         revealBtn.classList.add('btn-dim');
@@ -328,6 +362,7 @@ function setButtonState(state) {
         downBtn.disabled   = true;
         upBtn.classList.add('btn-dim');
         downBtn.classList.add('btn-dim');
+        if (priceInput) { priceInput.disabled = true;  priceInput.classList.add('btn-dim'); }
     } else if (state === "guess") {
         revealBtn.disabled = true;
         revealBtn.classList.add('btn-dim');
@@ -335,6 +370,7 @@ function setButtonState(state) {
         downBtn.disabled   = false;
         upBtn.classList.remove('btn-dim');
         downBtn.classList.remove('btn-dim');
+        if (priceInput) { priceInput.disabled = false; priceInput.classList.remove('btn-dim'); priceInput.focus(); }
     }
 }
 
