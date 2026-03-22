@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DojiDash — Focus Mode</title>
+    <link rel="stylesheet" href="styles.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+
+    <style>
+        /* ── Focus Mode extras — everything else comes from styles.css ── */
+
+        .focus-hud {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .focus-status {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #0f172a;
+            min-height: 24px;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .stats-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .stat-pill {
+            background: #f1f5f9;
+            border-radius: 99px;
+            padding: 4px 12px;
+            font-size: 12px;
+            color: #334155;
+        }
+
+        .stat-pill span {
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        /* Dimmed button state */
+        button.btn-dim {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .reveal-btn {
+            background: #6366f1;
+            color: white;
+            margin-right: 10px;
+        }
+
+        .button-row {
+            display: flex;
+            align-items: center;
+            margin-top: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="usernameDisplay" class="username-display"></div>
+
+    <!-- Focus Mode HUD — replaces streak display -->
+    <div id="focusHUD" class="focus-hud">Loading...</div>
+    <div id="focusStatus" class="focus-status"></div>
+
+    <!-- Chart — identical div to game.html so styles.css applies -->
+    <div class="chart-wrapper">
+        <div id="chart"></div>
+        <div id="glowOverlay" class="glow-overlay"></div>
+    </div>
+
+    <!-- Stats panel — shows metadata from last revealed candle -->
+    <div class="stats-panel">
+        <div class="stat-pill">Trend: <span id="statTrend">—</span></div>
+        <div class="stat-pill">Momentum: <span id="statMomentum">—</span></div>
+        <div class="stat-pill">Volatility: <span id="statVolatility">—</span></div>
+        <div class="stat-pill">RSI: <span id="statRSI">—</span></div>
+        <div class="stat-pill">ATR: <span id="statATR">—</span></div>
+        <div class="stat-pill">Volume: <span id="statVolume">—</span></div>
+        <div class="stat-pill">Candle: <span id="statStrength">—</span></div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="button-row">
+        <button id="revealBtn"
+                class="reveal-btn"
+                onclick="startAutoReveal()">
+            REVEAL
+        </button>
+        <button id="downBtn"
+                class="down"
+                onclick="handleGuess('down')">
+            DOWN
+        </button>
+        <button id="upBtn"
+                class="up"
+                onclick="handleGuess('up')">
+            UP
+        </button>
+    </div>
+
+    <!-- Popups — identical to game.html -->
+    <div id="resultPopup" class="popup hidden">
+        <span id="popupResultText"></span>
+    </div>
+
+    <div id="wsbPopup" class="wsb-popup">
+        <img id="mascotEmoji" class="wsb-emoji">
+        <span id="wsbText" class="wsb-text"></span>
+    </div>
+
+    <!-- End screen — identical structure to game.html -->
+    <div id="endScreen" class="end-screen hidden">
+        <div class="end-content">
+            <h2>Session Over</h2>
+            <p id="resultText"></p>
+            <button id="playAgainBtn">Play Again</button>
+            <button id="homeBtn">Home</button>
+        </div>
+    </div>
+
+    <script src="focusMode.js"></script>
+</body>
+</html>
