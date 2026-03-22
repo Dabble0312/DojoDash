@@ -232,7 +232,7 @@ function transitionTo(newState) {
    5. MANUAL REVEAL (BROWSING only)
 ----------------------------------------- */
 function manualReveal() {
-    if (currentState !== STATE.BROWSING) return;
+    if (currentState !== STATE.BROWSING && currentState !== STATE.REVIEWING) return;
     if (revealIndex >= futureCandles.length) {
         endSession();
         return;
