@@ -54,6 +54,40 @@
             cursor: not-allowed;
         }
 
+        .price-target-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .price-target-input {
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(0,0,0,0.1);
+            font-size: 15px;
+            width: 140px;
+            outline: none;
+        }
+
+        .price-target-input.btn-dim {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .price-target-label {
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .price-feedback {
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            min-height: 20px;
+            margin-top: 6px;
+        }
+
         .reveal-btn {
             background: #6366f1;
             color: white;
@@ -112,6 +146,20 @@
             UP
         </button>
     </div>
+
+    <!-- Price target input — shown when UP/DOWN are active -->
+    <div class="price-target-row">
+        <span class="price-target-label">Price target (optional):</span>
+        <input
+            id="priceTarget"
+            type="number"
+            step="0.01"
+            placeholder="e.g. 372.50"
+            class="price-target-input"
+            disabled
+        >
+    </div>
+    <div id="priceFeedback" class="price-feedback"></div>
 
     <!-- Popups — identical to game.html -->
     <div id="resultPopup" class="popup hidden">
