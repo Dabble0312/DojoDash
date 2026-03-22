@@ -5,20 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DojiDash — Focus Mode</title>
     <link rel="stylesheet" href="styles.css">
-
+ 
     <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase.js"></script>
-
+ 
     <style>
         /* ── Focus Mode extras — everything else comes from styles.css ── */
-
+ 
         .focus-hud {
             font-size: 0.85rem;
             color: #64748b;
             margin-bottom: 8px;
         }
-
+ 
         .focus-status {
             font-size: 1rem;
             font-weight: 700;
@@ -27,14 +27,14 @@
             margin-bottom: 8px;
             text-align: center;
         }
-
+ 
         .stats-panel {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
             margin-top: 10px;
         }
-
+ 
         .stat-pill {
             background: #f1f5f9;
             border-radius: 99px;
@@ -42,25 +42,25 @@
             font-size: 12px;
             color: #334155;
         }
-
+ 
         .stat-pill span {
             font-weight: 700;
             color: #0f172a;
         }
-
+ 
         /* Dimmed button state */
         button.btn-dim {
             opacity: 0.35;
             cursor: not-allowed;
         }
-
+ 
         .price-target-row {
             display: flex;
             align-items: center;
             gap: 8px;
             margin-top: 10px;
         }
-
+ 
         .price-target-input {
             padding: 10px 14px;
             border-radius: 12px;
@@ -69,17 +69,39 @@
             width: 140px;
             outline: none;
         }
-
+ 
         .price-target-input.btn-dim {
             opacity: 0.35;
             cursor: not-allowed;
         }
-
+ 
         .price-target-label {
             font-size: 13px;
             color: #64748b;
         }
-
+ 
+        .reveal-count-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+ 
+        .reveal-count-row label {
+            font-size: 13px;
+            color: #64748b;
+        }
+ 
+        .reveal-count-select {
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(0,0,0,0.1);
+            font-size: 13px;
+            color: #0f172a;
+            background: #f8fafc;
+            cursor: pointer;
+        }
+ 
         .price-feedback {
             font-size: 13px;
             font-weight: 600;
@@ -87,13 +109,13 @@
             min-height: 20px;
             margin-top: 6px;
         }
-
+ 
         .reveal-btn {
             background: #6366f1;
             color: white;
             margin-right: 10px;
         }
-
+ 
         .button-row {
             display: flex;
             align-items: center;
@@ -104,19 +126,19 @@
     </style>
 </head>
 <body>
-
+ 
     <div id="usernameDisplay" class="username-display"></div>
-
+ 
     <!-- Focus Mode HUD — replaces streak display -->
     <div id="focusHUD" class="focus-hud">Loading...</div>
     <div id="focusStatus" class="focus-status"></div>
-
+ 
     <!-- Chart — identical div to game.html so styles.css applies -->
     <div class="chart-wrapper">
         <div id="chart"></div>
         <div id="glowOverlay" class="glow-overlay"></div>
     </div>
-
+ 
     <!-- Stats panel — shows metadata from last revealed candle -->
     <div class="stats-panel">
         <div class="stat-pill">Trend: <span id="statTrend">—</span></div>
@@ -127,7 +149,21 @@
         <div class="stat-pill">Volume: <span id="statVolume">—</span></div>
         <div class="stat-pill">Candle: <span id="statStrength">—</span></div>
     </div>
-
+ 
+    <!-- Reveal count selector -->
+    <div class="reveal-count-row">
+        <label for="revealCount">Candles to reveal:</label>
+        <select id="revealCount" class="reveal-count-select">
+            <option value="1">1 day</option>
+            <option value="2">2 days</option>
+            <option value="3">3 days</option>
+            <option value="4" selected>4 days</option>
+            <option value="5">5 days</option>
+            <option value="6">6 days</option>
+            <option value="7">7 days</option>
+        </select>
+    </div>
+ 
     <!-- Buttons -->
     <div class="button-row">
         <button id="revealBtn"
@@ -146,7 +182,7 @@
             UP
         </button>
     </div>
-
+ 
     <!-- Price target input — shown when UP/DOWN are active -->
     <div class="price-target-row">
         <span class="price-target-label">Price target (optional):</span>
@@ -160,17 +196,17 @@
         >
     </div>
     <div id="priceFeedback" class="price-feedback"></div>
-
+ 
     <!-- Popups — identical to game.html -->
     <div id="resultPopup" class="popup hidden">
         <span id="popupResultText"></span>
     </div>
-
+ 
     <div id="wsbPopup" class="wsb-popup">
         <img id="mascotEmoji" class="wsb-emoji">
         <span id="wsbText" class="wsb-text"></span>
     </div>
-
+ 
     <!-- End screen — identical structure to game.html -->
     <div id="endScreen" class="end-screen hidden">
         <div class="end-content">
@@ -180,7 +216,7 @@
             <button id="homeBtn">Home</button>
         </div>
     </div>
-
+ 
     <script src="focusMode.js"></script>
 </body>
 </html>
