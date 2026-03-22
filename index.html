@@ -32,6 +32,10 @@
             Focus Mode
         </button>
 
+        <button id="tradingBtn" class="start-button" style="background: #0f172a; margin-top: 8px;">
+            Trading Mode
+        </button>
+
         <button onclick="window.location.href='test.html'" class="btn">
             Take Test
         </button>
@@ -58,6 +62,16 @@
             }
             localStorage.setItem("username", username);
             window.location.href = "focus.html";
+        });
+
+        document.getElementById("tradingBtn").addEventListener("click", () => {
+            const username = document.getElementById("usernameInput").value.trim();
+            if (username.length === 0) {
+                alert("Please enter a name first");
+                return;
+            }
+            localStorage.setItem("username", username);
+            window.location.href = "trading.html";
         });
     </script>
 </body>
