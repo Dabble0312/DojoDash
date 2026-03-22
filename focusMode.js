@@ -5,7 +5,18 @@ console.log("Focus Mode JS is running");
 // =========================
 // CONFIGURATION
 // =========================
-const REVEALS_BEFORE_GUESS = 4;   // how many candles auto-reveal before a guess is required
+const MAX_REVEALS_PER_BURST = 7;   // hard cap — dropdown cannot exceed this
+
+// Reads the dropdown value at the moment it's needed, so the player
+// can change it between rounds without reloading anything.
+function getRevealCount() {
+    const el = document.getElementById('revealCount');
+    if (!el) return 4;   // safe fallback
+    const val = parseInt(el.value);
+    if (isNaN(val) || val < 1) return 1;
+    if (val > MAX_REVEALS_PER_BURST) return MAX_REVEALS_PER_BURST;
+    return val;
+}
 const MAX_WRONG             = 5;   // wrong guesses before "Focus Lost"
 const REVEAL_SPEED_MS       = 600; // ms between each auto-reveal
 
@@ -231,7 +242,7 @@ function startAutoReveal() {
     setButtonState("revealing");
 
     let count = 0;
-    const maxThisBurst = REVEALS_BEFORE_GUESS;
+    const maxThisBurst = getRevealCount();
 
     function revealNext() {
         if (count >= maxThisBurst || revealIndex >= futureCandles.length) {
@@ -285,11 +296,26 @@ function handleGuess(guess) {
     const targetValue = priceInput ? parseFloat(priceInput.value) : NaN;
     if (priceInput) priceInput.value = '';
 
-    // Store prediction — scoring happens when the candle is revealed
+    // Store prediction — scoring happens when the LAST candle of the
+    // next burst is revealed, not the first.
+    // burstEndIndex = the index of the last candle that will be revealed
+    // in the upcoming burst (capped at the end of futureCandles).
+    const burstEndIndex = Math.min(
+        revealIndex + getRevealCount() - 1,
+        futureCandles.length - 1
+    );
+
+    // Capture the close price of the candle currently at the right edge
+    // of the chart — this is the baseline for direction comparison.
+    const baselineClose = revealedSoFar.length > 0
+        ? revealedSoFar[revealedSoFar.length - 1].close
+        : allCandles[allCandles.length - 1].close;
+
     pendingPrediction = {
-        guess:       guess,
-        targetPrice: targetValue,
-        candleIndex: revealIndex,   // this is the future candle we're predicting
+        guess:        guess,
+        targetPrice:  targetValue,
+        candleIndex:  burstEndIndex,   // score on the LAST candle of the burst
+        baseClose:    baselineClose,   // compare direction against THIS price
     };
 
     showStatus("Reveal to see if you were right!");
@@ -304,17 +330,16 @@ function handleGuess(guess) {
 function scorePendingPrediction() {
     if (!pendingPrediction) return;
 
-    const { guess, targetPrice, candleIndex } = pendingPrediction;
+    const { guess, targetPrice, candleIndex, baseClose } = pendingPrediction;
     pendingPrediction = null;
     guessCount++;
 
+    // predictedCandle is the LAST candle of the reveal burst
     const predictedCandle = futureCandles[candleIndex];
-    const prevCandle      = candleIndex > 0
-        ? futureCandles[candleIndex - 1]
-        : revealedSoFar[revealedSoFar.length - 2]; // last of allCandles if first future
 
-    // ── Direction feedback
-    const priceWentUp = predictedCandle.close > prevCandle.close;
+    // Direction: compare the last revealed candle's close against
+    // the baseline close captured just before the guess was made
+    const priceWentUp = predictedCandle.close > baseClose;
     const correct     = (guess === 'up' && priceWentUp) || (guess === 'down' && !priceWentUp);
 
     if (correct) {
