@@ -25,6 +25,15 @@ let awaitingGuess    = false;  // true when UP/DOWN are active
 let autoRevealActive = false;  // true while auto-reveal timer is running
 let sessionActive    = false;
 
+// Stores the guess + price target between submission and the moment
+// the prediction candle is actually revealed on the chart
+let pendingPrediction = null;
+// {
+//   guess:       'up' | 'down',
+//   targetPrice: number | NaN,
+//   candleIndex: number   ← the revealIndex of the candle we're comparing against
+// }
+
 let chart;
 let candlestickSeries;
 let volumeSeries;
@@ -200,6 +209,7 @@ function resetSession() {
     autoRevealActive = false;
     sessionActive    = true;
 
+    pendingPrediction = null;
     updateHUD();
     setButtonState("reveal");  // start with Reveal active, UP/DOWN inactive
 }
@@ -233,13 +243,19 @@ function startAutoReveal() {
             return;
         }
 
-        const candle = futureCandles[revealIndex];
+        const candle        = futureCandles[revealIndex];
+        const thisIndex     = revealIndex;   // capture before increment
         revealedSoFar.push(candle);
         revealIndex++;
         count++;
 
         renderChart();
         updateStatsPanel();
+
+        // If a prediction is waiting for exactly this candle, score it now
+        if (pendingPrediction && pendingPrediction.candleIndex === thisIndex) {
+            scorePendingPrediction();
+        }
 
         setTimeout(revealNext, REVEAL_SPEED_MS);
     }
@@ -250,47 +266,56 @@ function startAutoReveal() {
 
 /* -----------------------------------------
    6. GUESS LOGIC
+   Stores the prediction immediately but does NOT
+   score or show feedback yet. Feedback fires inside
+   startAutoReveal() the moment the prediction candle
+   becomes visible on the chart.
 ----------------------------------------- */
 function handleGuess(guess) {
     if (!sessionActive || !awaitingGuess) return;
     awaitingGuess = false;
-    guessCount++;
 
-    const lastRevealed = revealedSoFar[revealedSoFar.length - 1];
-    const nextFuture   = futureCandles[revealIndex];  // not yet revealed
-
-    if (!nextFuture) {
+    if (!futureCandles[revealIndex]) {
         endSession("complete");
         return;
     }
 
-    // ── Direction check
-    const priceWentUp = nextFuture.close > lastRevealed.close;
+    // Read price target now (before input is disabled)
+    const priceInput  = document.getElementById('priceTarget');
+    const targetValue = priceInput ? parseFloat(priceInput.value) : NaN;
+    if (priceInput) priceInput.value = '';
+
+    // Store prediction — scoring happens when the candle is revealed
+    pendingPrediction = {
+        guess:       guess,
+        targetPrice: targetValue,
+        candleIndex: revealIndex,   // this is the future candle we're predicting
+    };
+
+    showStatus("Reveal to see if you were right!");
+    setButtonState("reveal");
+}
+
+/* -----------------------------------------
+   6b. SCORE PENDING PREDICTION
+   Called by startAutoReveal() the moment
+   pendingPrediction.candleIndex is revealed.
+----------------------------------------- */
+function scorePendingPrediction() {
+    if (!pendingPrediction) return;
+
+    const { guess, targetPrice, candleIndex } = pendingPrediction;
+    pendingPrediction = null;
+    guessCount++;
+
+    const predictedCandle = futureCandles[candleIndex];
+    const prevCandle      = candleIndex > 0
+        ? futureCandles[candleIndex - 1]
+        : revealedSoFar[revealedSoFar.length - 2]; // last of allCandles if first future
+
+    // ── Direction feedback
+    const priceWentUp = predictedCandle.close > prevCandle.close;
     const correct     = (guess === 'up' && priceWentUp) || (guess === 'down' && !priceWentUp);
-
-    // ── Price target check (optional — blank input is fine)
-    const priceInput    = document.getElementById('priceTarget');
-    const targetValue   = priceInput ? parseFloat(priceInput.value) : NaN;
-    const hasTarget     = !isNaN(targetValue) && targetValue > 0;
-    const actualClose   = nextFuture.close;
-
-    let priceFeedback = '';
-    if (hasTarget) {
-        const diff    = actualClose - targetValue;
-        const diffPct = ((Math.abs(diff) / actualClose) * 100).toFixed(1);
-
-        if (Math.abs(diff) / actualClose < 0.005) {
-            // Within 0.5% — essentially spot on
-            priceFeedback = `🎯 Spot on! Target ₹${targetValue.toFixed(2)} vs actual ₹${actualClose.toFixed(2)}`;
-        } else if (diff > 0) {
-            priceFeedback = `📈 Actual was ${diffPct}% higher than your target (₹${targetValue.toFixed(2)} → ₹${actualClose.toFixed(2)})`;
-        } else {
-            priceFeedback = `📉 Actual was ${diffPct}% lower than your target (₹${targetValue.toFixed(2)} → ₹${actualClose.toFixed(2)})`;
-        }
-
-        // Clear the input for next round
-        priceInput.value = '';
-    }
 
     if (correct) {
         correctCount++;
@@ -300,31 +325,47 @@ function handleGuess(guess) {
         wrongCount++;
         showPopup("wrong");
         showWSBPopup(false);
-
-        if (wrongCount >= MAX_WRONG) {
-            setTimeout(() => endSession("focus_lost"), 1200);
-            return;
-        }
     }
 
-    // Show price feedback below the status line
-    showPriceFeedback(priceFeedback);
+    // ── Price target feedback
+    const hasTarget = !isNaN(targetPrice) && targetPrice > 0;
+    if (hasTarget) {
+        const actual  = predictedCandle.close;
+        const diff    = actual - targetPrice;
+        const diffPct = ((Math.abs(diff) / actual) * 100).toFixed(1);
+        let msg = '';
+
+        if (Math.abs(diff) / actual < 0.005) {
+            msg = `🎯 Spot on! Target ₹${targetPrice.toFixed(2)} vs actual ₹${actual.toFixed(2)}`;
+        } else if (diff > 0) {
+            msg = `📈 Actual was ${diffPct}% higher than your target (₹${targetPrice.toFixed(2)} → ₹${actual.toFixed(2)})`;
+        } else {
+            msg = `📉 Actual was ${diffPct}% lower than your target (₹${targetPrice.toFixed(2)} → ₹${actual.toFixed(2)})`;
+        }
+        showPriceFeedback(msg);
+    }
+
     updateHUD();
 
-    if (revealIndex >= futureCandles.length) {
-        setTimeout(() => endSession("complete"), 1200);
+    if (wrongCount >= MAX_WRONG) {
+        setTimeout(() => endSession("focus_lost"), 1400);
         return;
     }
 
+    if (revealIndex >= futureCandles.length) {
+        setTimeout(() => endSession("complete"), 1400);
+        return;
+    }
+
+    // Clear feedback and re-enable Reveal after a pause
     setTimeout(() => {
-        setButtonState("reveal");
         showStatus("");
         showPriceFeedback("");
     }, 2000);
 }
 
 /* -----------------------------------------
-   6b. PRICE FEEDBACK DISPLAY
+   6c. PRICE FEEDBACK DISPLAY
 ----------------------------------------- */
 function showPriceFeedback(msg) {
     const el = document.getElementById('priceFeedback');
