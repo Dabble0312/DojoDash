@@ -170,6 +170,56 @@
             align-items: center;
         }
 
+        /* ── Stats panel row with inline summary toggle ── */
+        .stats-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .stats-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #94a3b8;
+        }
+
+        .summary-toggle-btn {
+            background: none;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 99px;
+            padding: 3px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #6366f1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: background 0.15s;
+        }
+
+        .summary-toggle-btn:hover {
+            background: #eef2ff;
+        }
+
+        /* ── Summary panel — hidden by default, collapsible ── */
+        #summaryPanel {
+            background: #f8fafc;
+            border: 1px solid rgba(99,102,241,0.2);
+            border-left: 3px solid #6366f1;
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-top: 8px;
+            font-size: 13px;
+            line-height: 1.7;
+            color: #334155;
+        }
+
+        #summaryPanel.hidden { display: none; }
+
         .reveal-btn {
             background: #6366f1;
             color: white;
@@ -200,6 +250,12 @@
     </div>
 
     <!-- Stats panel — shows metadata from last revealed candle -->
+    <div class="stats-panel-header">
+        <span class="stats-label">Candle context</span>
+        <button class="summary-toggle-btn" onclick="toggleSummary()">
+            &#9432; Explain this candle
+        </button>
+    </div>
     <div class="stats-panel">
         <div class="stat-pill">Trend: <span id="statTrend">—</span></div>
         <div class="stat-pill">Momentum: <span id="statMomentum">—</span></div>
@@ -208,6 +264,11 @@
         <div class="stat-pill">ATR: <span id="statATR">—</span></div>
         <div class="stat-pill">Volume: <span id="statVolume">—</span></div>
         <div class="stat-pill">Candle: <span id="statStrength">—</span></div>
+    </div>
+
+    <!-- Summary panel — hidden until user clicks the button -->
+    <div id="summaryPanel" class="hidden">
+        <span id="summaryText"></span>
     </div>
 
     <!-- Reveal count selector -->
