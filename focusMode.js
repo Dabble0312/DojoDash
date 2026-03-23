@@ -207,6 +207,9 @@ function initChart() {
 
         // Show OHLC in the dedicated candle info panel — stays until next click
         showCandleInfo(matched);
+
+        // If summary panel is open, refresh it for the newly clicked candle
+        refreshSummaryIfOpen(matched);
     });
 }
 
@@ -639,6 +642,112 @@ function getRandomEmoji(type) {
     ][Math.floor(Math.random() * 3)];
 }
 
+
+/* -----------------------------------------
+   11b. SUMMARY ENGINE
+   Natural language descriptions of a candle.
+   Called on demand via toggleSummary().
+----------------------------------------- */
+function mapIdentity(candle) {
+    if (candle.inside_bar === 1)
+        return "The market paused today, forming an inside bar that signals compression.";
+    if (candle.outside_bar === 1)
+        return "Today expanded the battlefield with an outside bar showing volatility expansion.";
+    if (candle.engulfing_soft === 1)
+        return "This candle quietly engulfed the previous one, hinting at a shift in control.";
+    if (candle.candle_strength === "strong" && candle.bullish === 1)
+        return "Today was a decisive win for the buyers as the price ended much higher than it started.";
+    if (candle.candle_strength === "strong" && candle.bearish === 1)
+        return "Sellers dominated today, pushing the price sharply lower.";
+    if (candle.candle_strength === "weak" && candle.body_ratio < 0.20)
+        return "Neither side won today. This was a tug-of-war where buyers and sellers ended in a stalemate.";
+    if (candle.bullish === 1)
+        return "Buyers nudged the price higher today, though without overwhelming force.";
+    return "Sellers had the edge today, closing the price below the open.";
+}
+
+function mapAtmosphere(candle) {
+    const trend = candle.trend_tag;
+    const vol   = candle.volatility_tag;
+    let sentence = "";
+
+    if (trend === "uptrend")
+        sentence = "You are currently following an upward path where prices are making higher steps.";
+    else if (trend === "downtrend")
+        sentence = "The market is stepping downward, showing a broader decline.";
+    else
+        sentence = "The market is moving sideways without a clear directional bias.";
+
+    if (vol === "high_volatility")
+        sentence += " The winds are blowing hard right now, meaning prices are swinging wildly and the market is nervous.";
+    else if (vol === "low_volatility")
+        sentence += " The market feels calm, with price movement staying contained.";
+
+    return sentence;
+}
+
+function mapConviction(candle) {
+    let parts = [];
+
+    if (candle.volume_tag === "volume_spike" && candle.bullish === 1)
+        parts.push("The market is shouting its approval. This price jump happened with massive force and conviction.");
+    else if (candle.volume_tag === "volume_spike" && candle.bearish === 1)
+        parts.push("Sellers acted with force today, backed by a surge in volume.");
+    else if (candle.volume_tag === "volume_drop" && candle.bullish === 1)
+        parts.push("The price is rising, but the market is only whispering. This suggests the move is running out of steam.");
+    else if (candle.volume_tag === "volume_drop" && candle.bearish === 1)
+        parts.push("Sellers pushed the price down, but without much energy behind the move.");
+
+    if (candle.upper_wick_ratio > 0.6)
+        parts.push("A long upper wick shows sellers pushed back strongly.");
+    else if (candle.lower_wick_ratio > 0.6)
+        parts.push("A long lower wick shows buyers stepped in aggressively.");
+
+    return parts.length > 0 ? parts.join(" ") : "Volume and wick pressure were both unremarkable on this candle.";
+}
+
+function summarize(candle) {
+    return mapIdentity(candle) + " " + mapAtmosphere(candle) + " " + mapConviction(candle);
+}
+
+/* -----------------------------------------
+   11c. SUMMARY PANEL TOGGLE
+   The summary box is hidden by default.
+   Clicking the info icon next to the stats
+   panel shows/hides it and fills it with
+   the summary for the currently displayed candle.
+----------------------------------------- */
+function toggleSummary() {
+    const panel = document.getElementById('summaryPanel');
+    if (!panel) return;
+
+    const isHidden = panel.classList.contains('hidden');
+
+    if (isHidden) {
+        // Find which candle is currently shown in the stats panel
+        // (either clicked candle or last revealed)
+        const candle = revealedSoFar.length > 0
+            ? revealedSoFar[revealedSoFar.length - 1]
+            : allCandles[allCandles.length - 1];
+
+        if (!candle) return;
+
+        const text = document.getElementById('summaryText');
+        if (text) text.textContent = summarize(candle);
+        panel.classList.remove('hidden');
+    } else {
+        panel.classList.add('hidden');
+    }
+}
+
+// Called from showCandleInfo so the summary updates
+// automatically if the panel is already open
+function refreshSummaryIfOpen(candle) {
+    const panel = document.getElementById('summaryPanel');
+    if (!panel || panel.classList.contains('hidden')) return;
+    const text = document.getElementById('summaryText');
+    if (text && candle) text.textContent = summarize(candle);
+}
 
 /* -----------------------------------------
    12. BOOT
