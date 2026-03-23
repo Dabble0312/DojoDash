@@ -182,6 +182,32 @@ function initChart() {
     });
 
     chart.timeScale().fitContent();
+
+    // ── Candle click handler
+    // When the user clicks a candle, find the matching candle object
+    // by date and update the stats panel with that candle's tags.
+    chart.subscribeCrosshairMove((param) => {
+        // Only fire on actual clicks, not just hover
+    });
+
+    chart.subscribeClick((param) => {
+        if (!param || !param.time) return;
+
+        // param.time is "YYYY-MM-DD" — find matching candle in visible data
+        const clickedDate = param.time;
+        const allVisible  = [...allCandles, ...revealedSoFar];
+        const matched     = allVisible.find(c => c.date.slice(0, 10) === clickedDate);
+
+        if (!matched) return;
+
+        // Update the stats panel with the clicked candle's tags
+        updateStatsPanel(matched);
+
+        // Show a subtle visual indicator in the status line
+        showStatus(`Candle: ${clickedDate}  ·  Close ₹${matched.close.toFixed(2)}`);
+        // Clear the status after 2 seconds so it doesn't linger
+        setTimeout(() => showStatus(''), 2000);
+    });
 }
 
 
@@ -454,11 +480,14 @@ function updateHUD() {
     }
 }
 
-function updateStatsPanel() {
-    // Shows metadata from the most recently revealed candle
-    const last = revealedSoFar.length > 0
-        ? revealedSoFar[revealedSoFar.length - 1]
-        : allCandles[allCandles.length - 1];
+function updateStatsPanel(candle) {
+    // If a candle is passed (e.g. from a click), use it.
+    // Otherwise fall back to the most recently revealed candle.
+    const last = candle !== undefined
+        ? candle
+        : (revealedSoFar.length > 0
+            ? revealedSoFar[revealedSoFar.length - 1]
+            : allCandles[allCandles.length - 1]);
 
     if (!last) return;
 
