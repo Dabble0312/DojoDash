@@ -113,6 +113,8 @@ async function loadFocusBlock() {
         initChart();
         resetSession();
         updateStatsPanel();
+        showCandleInfo(null);
+        showPriceFeedback("");
         showStatus("");
 
     } catch (err) {
@@ -203,10 +205,8 @@ function initChart() {
         // Update the stats panel with the clicked candle's tags
         updateStatsPanel(matched);
 
-        // Show a subtle visual indicator in the status line
-        showStatus(`Candle: ${clickedDate}  ·  Close ₹${matched.close.toFixed(2)}`);
-        // Clear the status after 2 seconds so it doesn't linger
-        setTimeout(() => showStatus(''), 2000);
+        // Show OHLC in the dedicated candle info panel — stays until next click
+        showCandleInfo(matched);
     });
 }
 
@@ -408,19 +408,47 @@ function scorePendingPrediction() {
         return;
     }
 
-    // Clear feedback and re-enable Reveal after a pause
+    // Clear only the status line after a pause — price feedback stays
     setTimeout(() => {
         showStatus("");
-        showPriceFeedback("");
     }, 2000);
 }
 
 /* -----------------------------------------
    6c. PRICE FEEDBACK DISPLAY
+   Stays visible until next prediction fires.
+   Cleared only on new block load.
 ----------------------------------------- */
 function showPriceFeedback(msg) {
     const el = document.getElementById('priceFeedback');
     if (el) el.textContent = msg;
+}
+
+/* -----------------------------------------
+   6d. CANDLE INFO PANEL
+   Shows OHLC of the clicked candle.
+   Stays visible until the user clicks another candle.
+   Pass null to clear (new block load).
+----------------------------------------- */
+function showCandleInfo(candle) {
+    const el = document.getElementById('candleInfo');
+    if (!el) return;
+
+    if (!candle) {
+        el.innerHTML = '<span class="candle-info-empty">Click any candle to inspect</span>';
+        return;
+    }
+
+    const dir      = candle.bullish === 1 ? '▲' : '▼';
+    const dirColor = candle.bullish === 1 ? '#10b981' : '#ef4444';
+
+    el.innerHTML =
+        `<span class="candle-info-date">${candle.date.slice(0, 10)}</span>` +
+        `<span class="candle-info-dir" style="color:${dirColor}">${dir}</span>` +
+        `<span class="candle-info-item"><span class="candle-info-label">O</span>₹${candle.open.toFixed(2)}</span>` +
+        `<span class="candle-info-item"><span class="candle-info-label">H</span>₹${candle.high.toFixed(2)}</span>` +
+        `<span class="candle-info-item"><span class="candle-info-label">L</span>₹${candle.low.toFixed(2)}</span>` +
+        `<span class="candle-info-item"><span class="candle-info-label">C</span><strong>₹${candle.close.toFixed(2)}</strong></span>`;
 }
 
 
