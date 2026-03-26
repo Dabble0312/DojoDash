@@ -266,6 +266,59 @@
         <div class="stat-pill">Candle: <span id="statStrength">—</span></div>
     </div>
 
+<!-- LEVEL 2 SUMMARY ADDED-->
+
+<div class="stats-panel-header">
+        <span class="stats-label">Candle context</span>
+        <div style="display: flex; gap: 8px;">
+            <button class="summary-toggle-btn" onclick="togglePatternHighlighting()" style="border-color: #3b82f6; color: #3b82f6;">
+                ✨ Highlight Patterns
+            </button>
+            <button class="summary-toggle-btn" onclick="toggleSummary()">
+                ⓘ Explain this candle
+            </button>
+        </div>
+    </div>
+    
+    <div id="summaryPanel" class="hidden">
+        <span id="summaryText"></span>
+    </div>
+
+    <div id="patternExplainPanel" class="hidden" style="
+        background: #f0f9ff; 
+        border: 1px solid #bae6fd; 
+        border-left: 4px solid #3b82f6; 
+        border-radius: 10px; 
+        padding: 16px; 
+        margin-top: 10px; 
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h3 id="patternTitle" style="margin: 0; font-size: 14px; font-weight: 700; color: #0369a1; text-transform: uppercase;">Pattern Analysis</h3>
+            <span id="patternCounter" style="font-size: 11px; font-weight: 600; color: #0369a1; background: #e0f2fe; padding: 2px 8px; border-radius: 99px;">0 / 0</span>
+        </div>
+        
+        <p id="patternDescription" style="margin: 0; font-size: 13px; line-height: 1.6; color: #0c4a6e;"></p>
+        
+        <div style="display: flex; gap: 8px; margin-top: 12px;">
+            <button onclick="prevPattern()" class="summary-toggle-btn" style="flex: 1; justify-content: center;">&larr; Previous</button>
+            <button onclick="nextPattern()" class="summary-toggle-btn" style="flex: 1; justify-content: center;">Next &rarr;</button>
+        </div>
+    </div>
+
+    <div class="button-row">
+        <button id="revealBtn" class="reveal-btn" onclick="startAutoReveal()">REVEAL</button>
+        
+        <button id="explainSeqBtn" 
+                style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: 700; padding: 10px 20px; border-radius: 12px; cursor: pointer;" 
+                onclick="explainCurrentPattern()">
+            EXPLAIN SEQUENCE
+        </button>
+
+        <button id="downBtn" class="down" onclick="handleGuess('down')">DOWN</button>
+        <button id="upBtn" class="up" onclick="handleGuess('up')">UP</button>
+    </div>
+  
     <!-- Summary panel — hidden until user clicks the button -->
     <div id="summaryPanel" class="hidden">
         <span id="summaryText"></span>
