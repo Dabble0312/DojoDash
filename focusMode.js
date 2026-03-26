@@ -848,6 +848,138 @@ function refreshSummaryIfOpen(candle) {
     if (text && candle) text.textContent = summarize(candle);
 }
 
+
+
+/* -----------------------------------------
+   12: PATTERN EXPLAINER ENGINE (From whatwherewhy4.py)
+----------------------------------------- */
+const PatternExplainer = {
+    summarize: function(pattern, candles) {
+        const A = this.semanticLayer(pattern);
+        const B = this.contextualLayer(pattern, candles);
+        const C = this.catalystLayer(pattern, candles);
+        const D = this.priceActionLayer(pattern, candles);
+
+        return {
+            label: pattern.label,
+            full_summary: `${A} ${B} ${C} ${D}`
+        };
+    },
+
+    semanticLayer: (p) => {
+        const length = p.metadata?.absolute_length || p.indices.length;
+        const defs = {
+            "Compression": `A ${length}-candle compression where price contracts and volatility dries up.`,
+            "Momentum Burst": `A ${length}-candle momentum burst showing strong directional pressure.`,
+            "Failed Breakout": "A failed breakout where price pushed above resistance but could not hold.",
+            "Failed Breakdown": "A failed breakdown where price dipped below support but snapped back.",
+            "Spring": "A spring pattern — a sharp shakeout below support followed by a strong recovery.",
+            "Engulfing Flip": "An engulfing flip — a decisive candle that swallows the prior range."
+        };
+        return defs[p.label] || `A ${p.label} pattern.`;
+    },
+
+    contextualLayer: (p, candles) => {
+        const last = candles[p.indices[p.indices.length - 1]];
+        const trend = last.trend_tag || "sideways";
+        const vol = last.volatility_tag || "normal";
+        return `This occurred during a ${trend} with ${vol.replace('_', ' ')} volatility.`;
+    },
+
+    catalystLayer: (p, candles) => {
+        const seq = p.indices.map(i => candles[i]);
+        const hasSpike = seq.some(c => c.volume_tag === "volume_spike");
+        const avgBody = seq.reduce((acc, c) => acc + (c.body_ratio || 0), 0) / seq.length;
+        
+        const volText = hasSpike ? "The move was confirmed by strong volume." : "Volume was normal.";
+        const bodyText = avgBody > 0.5 ? "Candle bodies showed high conviction." : "Bodies showed moderate force.";
+        return `${volText} ${bodyText}`;
+    },
+
+    priceActionLayer: (p, candles) => {
+        const seq = p.indices.map(i => candles[i]);
+        const first = seq[0];
+        const last = seq[seq.length - 1];
+        const direction = last.close > first.open ? "rose" : "fell";
+        return `Price ${direction} from ₹${first.open.toFixed(2)} to ₹${last.close.toFixed(2)}.`;
+    }
+};
+
+/* -----------------------------------------
+   NEW: GUIDED TOUR STATE & HIGHLIGHTING
+----------------------------------------- */
+let currentPatternIdx = 0;
+let detectedPatterns = []; 
+let highlightSeries = null;
+
+// Call this once your data is loaded from Supabase
+function initializePatterns(blockData) {
+    detectedPatterns = blockData.detected_patterns || [];
+    currentPatternIdx = 0;
+}
+
+function togglePatternHighlighting() {
+    const isShowing = !!highlightSeries;
+    if (isShowing) {
+        chart.removeSeries(highlightSeries);
+        highlightSeries = null;
+    } else {
+        showAllPatterns();
+    }
+}
+
+function showAllPatterns() {
+    if (highlightSeries) chart.removeSeries(highlightSeries);
+    
+    highlightSeries = chart.addHistogramSeries({
+        color: 'rgba(33, 150, 243, 0.15)',
+        priceFormat: { type: 'volume' },
+        priceScaleId: 'overlay',
+    });
+
+    const highlightData = [];
+    detectedPatterns.forEach(p => {
+        p.indices.forEach(idx => {
+            if (allCandles[idx]) {
+                highlightData.push({ time: allCandles[idx].time, value: 999999 });
+            }
+        });
+    });
+    highlightSeries.setData(highlightData);
+}
+
+function explainCurrentPattern() {
+    if (detectedPatterns.length === 0) return;
+    
+    const p = detectedPatterns[currentPatternIdx];
+    const explanation = PatternExplainer.summarize(p, allCandles);
+    
+    // Update your UI elements (Ensure these IDs exist in your HTML)
+    const titleEl = document.getElementById('patternTitle');
+    const descEl = document.getElementById('patternDescription');
+    const panel = document.getElementById('patternExplainPanel');
+    
+    if (titleEl) titleEl.textContent = `${p.label} (${currentPatternIdx + 1}/${detectedPatterns.length})`;
+    if (descEl) descEl.textContent = explanation.full_summary;
+    if (panel) panel.classList.remove('hidden');
+
+    // Focus chart on the pattern
+    chart.timeScale().scrollToPosition(p.indices[0], true);
+}
+
+function nextPattern() {
+    if (currentPatternIdx < detectedPatterns.length - 1) {
+        currentPatternIdx++;
+        explainCurrentPattern();
+    }
+}
+
+function prevPattern() {
+    if (currentPatternIdx > 0) {
+        currentPatternIdx--;
+        explainCurrentPattern();
+    }
+}
 /* -----------------------------------------
    12. BOOT
 ----------------------------------------- */
