@@ -887,6 +887,7 @@ const PATTERN_SHAPE = {
 
 // ── Keep track of which markers are on the chart so we can clear them
 let patternMarkersActive = false;
+let activePatternFilter  = null;  // null = show all, string = show only this label
 
 // Maps seq_ column keys to label strings
 const SEQ_KEY_TO_LABEL = {
@@ -1105,47 +1106,89 @@ function summarizePattern(pattern) {
              full: [A, B, C, D].join(" ") };
 }
 
-// ── SHOW PATTERNS — pills + chart markers
+// ── SHOW PATTERNS — pills + chart markers, with click-to-filter
 function togglePatterns() {
     const panel = document.getElementById('patternPanel');
     if (!panel) return;
 
+    // If already open, close and reset filter
     if (!panel.classList.contains('hidden')) {
         panel.classList.add('hidden');
         clearPatternHighlights();
+        activePatternFilter = null;
         return;
     }
 
+    activePatternFilter = null;  // reset filter on fresh open
+    renderPatternPills();
+    panel.classList.remove('hidden');
+}
+
+// ── Renders pills and redraws markers — called on open AND on filter change
+function renderPatternPills() {
+    const panel   = document.getElementById('patternPanel');
     const visible = getVisiblePatterns();
 
     if (visible.length === 0) {
         panel.innerHTML = '<span class="pattern-none">No sequences detected on visible candles yet.</span>';
-        panel.classList.remove('hidden');
+        clearPatternHighlights();
         return;
     }
 
-    // Render pills grouped by label
+    // Group by label
     const byLabel = {};
     visible.forEach(p => {
         if (!byLabel[p.label]) byLabel[p.label] = [];
         byLabel[p.label].push(p);
     });
 
+    // Build pills — active filter gets full colour, others dim
     panel.innerHTML = Object.entries(byLabel).map(([label, patterns]) => {
-        const colour = PATTERN_COLOURS[label] || '#6366f1';
-        const dates  = patterns.map(p => p.start_date.slice(0, 10)).join(', ');
-        return `<span class="pattern-tag" style="background:${colour}20;color:${colour};border:1px solid ${colour}40">
-                    ${label} <span style="opacity:0.6;font-size:10px">(${patterns.length})</span>
-                </span>`;
+        const colour    = PATTERN_COLOURS[label] || '#6366f1';
+        const isActive  = activePatternFilter === label;
+        const isAnyActive = activePatternFilter !== null;
+
+        const bg      = isActive  ? colour : `${colour}20`;
+        const border  = isActive  ? colour : `${colour}40`;
+        const text    = isActive  ? '#fff'  : colour;
+        const opacity = (isAnyActive && !isActive) ? '0.4' : '1';
+
+        return `<span
+            class="pattern-tag pattern-pill-btn"
+            onclick="filterPattern('${label}')"
+            style="background:${bg};color:${text};border:1px solid ${border};
+                   opacity:${opacity};cursor:pointer;transition:all 0.15s;user-select:none">
+            ${label}
+            <span style="opacity:0.7;font-size:10px;margin-left:3px">(${patterns.length})</span>
+        </span>`;
     }).join('');
 
-    panel.classList.remove('hidden');
+    // Draw markers for active filter or all
+    const toMark = activePatternFilter
+        ? visible.filter(p => p.label === activePatternFilter)
+        : visible;
 
-    // Draw markers on the chart
-    drawPatternMarkers(visible);
+    drawPatternMarkers(toMark);
 }
 
-// ── EXPLAIN PATTERNS — what/where/why summaries
+// ── Called when user clicks a pill
+function filterPattern(label) {
+    // Clicking the already-active filter resets to show all
+    if (activePatternFilter === label) {
+        activePatternFilter = null;
+    } else {
+        activePatternFilter = label;
+    }
+    renderPatternPills();
+
+    // Also refresh the explain panel if it's open
+    const ep = document.getElementById('patternExplainPanel');
+    if (ep && !ep.classList.contains('hidden')) {
+        renderPatternExplain();
+    }
+}
+
+// ── EXPLAIN PATTERNS — toggle wrapper
 function togglePatternExplain() {
     const panel = document.getElementById('patternExplainPanel');
     if (!panel) return;
@@ -1155,15 +1198,26 @@ function togglePatternExplain() {
         return;
     }
 
-    const visible = getVisiblePatterns();
+    renderPatternExplain();
+    panel.classList.remove('hidden');
+}
 
-    if (visible.length === 0) {
+// ── Renders explanations — respects activePatternFilter
+function renderPatternExplain() {
+    const panel   = document.getElementById('patternExplainPanel');
+    if (!panel) return;
+
+    const visible  = getVisiblePatterns();
+    const filtered = activePatternFilter
+        ? visible.filter(p => p.label === activePatternFilter)
+        : visible;
+
+    if (filtered.length === 0) {
         panel.innerHTML = '<span class="pattern-none">No sequences detected on visible candles yet.</span>';
-        panel.classList.remove('hidden');
         return;
     }
 
-    panel.innerHTML = visible.map(p => {
+    panel.innerHTML = filtered.map(p => {
         const s      = summarizePattern(p);
         const colour = PATTERN_COLOURS[p.label] || '#6366f1';
         const dates  = `${p.start_date.slice(0,10)} → ${p.end_date.slice(0,10)}`;
@@ -1177,8 +1231,6 @@ function togglePatternExplain() {
             <div style="margin:2px 0"><strong>Price action:</strong> ${s.price_action}</div>
         </div>`;
     }).join('<hr style="border:none;border-top:1px solid rgba(0,0,0,0.06);margin:10px 0">');
-
-    panel.classList.remove('hidden');
 }
 
 // ── DRAW MARKERS on chart — START marker + END marker per pattern
@@ -1251,6 +1303,7 @@ function hidePatternPanels() {
     const ep = document.getElementById('patternExplainPanel');
     if (pp) pp.classList.add('hidden');
     if (ep) ep.classList.add('hidden');
+    activePatternFilter = null;
 }
 
 /* -----------------------------------------
