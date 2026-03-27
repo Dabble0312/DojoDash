@@ -121,6 +121,7 @@ async function loadFocusBlock() {
         showStatus("");
         clearPatternHighlights();
         hidePatternPanels();
+        clearDynamicZones();
 
     } catch (err) {
         console.error("Supabase Error:", err.message);
@@ -189,6 +190,7 @@ function initChart() {
     });
 
     chart.timeScale().fitContent();
+    updateDynamicZones();   // draw initial zones for the 50 loaded candles
 
     // ── Candle click handler
     // When the user clicks a candle, find the matching candle object
@@ -296,6 +298,7 @@ function startAutoReveal() {
 
         renderChart();
         updateStatsPanel();
+        updateDynamicZones();   // recalculate R/S/M on every new candle
 
         // If a prediction is waiting for exactly this candle, score it now
         if (pendingPrediction && pendingPrediction.candleIndex === thisIndex) {
@@ -889,6 +892,10 @@ const PATTERN_SHAPE = {
 let patternMarkersActive = false;
 let activePatternFilter  = null;  // null = show all, string = show only this label
 
+// Dynamic zone price lines — updated every reveal
+let dynamicZones = { resistance: null, support: null, mean: null };
+let zonePriceLines = { resistance: null, support: null, mean: null };
+
 // Maps seq_ column keys to label strings
 const SEQ_KEY_TO_LABEL = {
     seq_compression:      "Compression",
@@ -966,6 +973,71 @@ function _buildSynthPattern(label, revealStart, revealEnd) {
     };
 }
 
+/* -----------------------------------------
+   DYNAMIC ZONE TRACKER
+   Runs every reveal. Calculates Resistance (high),
+   Support (low), and Mean (avg close) from all
+   currently visible candles and draws dotted price
+   lines on the chart. Zones update as candles appear.
+----------------------------------------- */
+function updateDynamicZones() {
+    if (!candlestickSeries) return;
+
+    const visible = [...allCandles, ...revealedSoFar];
+    if (visible.length === 0) return;
+
+    const resistance = Math.max(...visible.map(c => c.high));
+    const support    = Math.min(...visible.map(c => c.low));
+    const mean       = visible.reduce((s, c) => s + c.close, 0) / visible.length;
+
+    dynamicZones = { resistance, support, mean };
+
+    // Remove existing price lines cleanly before redrawing
+    try {
+        if (zonePriceLines.resistance) candlestickSeries.removePriceLine(zonePriceLines.resistance);
+        if (zonePriceLines.support)    candlestickSeries.removePriceLine(zonePriceLines.support);
+        if (zonePriceLines.mean)       candlestickSeries.removePriceLine(zonePriceLines.mean);
+    } catch(e) { /* series may have been removed on block reload */ }
+
+    zonePriceLines.resistance = candlestickSeries.createPriceLine({
+        price:       resistance,
+        color:       '#ef4444',
+        lineWidth:   1,
+        lineStyle:   2,   // 2 = dotted
+        axisLabelVisible: true,
+        title:       `R ₹${resistance.toFixed(2)}`,
+    });
+
+    zonePriceLines.support = candlestickSeries.createPriceLine({
+        price:       support,
+        color:       '#10b981',
+        lineWidth:   1,
+        lineStyle:   2,
+        axisLabelVisible: true,
+        title:       `S ₹${support.toFixed(2)}`,
+    });
+
+    zonePriceLines.mean = candlestickSeries.createPriceLine({
+        price:       mean,
+        color:       '#6366f1',
+        lineWidth:   1,
+        lineStyle:   2,
+        axisLabelVisible: true,
+        title:       `M ₹${mean.toFixed(2)}`,
+    });
+}
+
+// ── Clear zone lines on new block load
+function clearDynamicZones() {
+    try {
+        if (zonePriceLines.resistance) candlestickSeries.removePriceLine(zonePriceLines.resistance);
+        if (zonePriceLines.support)    candlestickSeries.removePriceLine(zonePriceLines.support);
+        if (zonePriceLines.mean)       candlestickSeries.removePriceLine(zonePriceLines.mean);
+    } catch(e) {}
+    zonePriceLines = { resistance: null, support: null, mean: null };
+    dynamicZones   = { resistance: null, support: null, mean: null };
+}
+
 // ── SEMANTIC: "What is this pattern?"
 function semanticLayer(pattern) {
     const label  = pattern.label;
@@ -985,10 +1057,13 @@ function semanticLayer(pattern) {
 }
 
 // ── CONTEXTUAL: "Where did this happen?"
+// Now zone-aware — checks proximity to dynamic R/S/M
 function contextualLayer(pattern) {
-    const idxs      = pattern.indices;
+    const idxs       = pattern.indices;
     const allVisible = [...allCandles, ...revealedSoFar];
-    const last       = allVisible[idxs[idxs.length - 1]];
+    const last        = allVisible[idxs[idxs.length - 1]];
+    const high        = Math.max(...idxs.map(i => allVisible[i].high));
+    const low         = Math.min(...idxs.map(i => allVisible[i].low));
 
     const trendMap = {
         "uptrend":   "during an uptrend",
@@ -1001,10 +1076,32 @@ function contextualLayer(pattern) {
         "unknown_volatility": "with normal volatility",
     };
 
-    const trend = trendMap[last.trend_tag]   || `during a ${last.trend_tag}`;
-    const vol   = volMap[last.volatility_tag] || `with ${last.volatility_tag}`;
+    const trend = trendMap[last.trend_tag]    || `during a ${last.trend_tag}`;
+    const vol   = volMap[last.volatility_tag]  || `with ${last.volatility_tag}`;
 
-    return `This occurred ${trend} ${vol}.`;
+    let base = `This occurred ${trend} ${vol}.`;
+
+    // Zone proximity — only comment if zones have been computed
+    if (dynamicZones.resistance !== null) {
+        const { resistance, support, mean } = dynamicZones;
+        const threshold = (resistance - support) * 0.05; // within 5% of the session range
+
+        if (pattern.label === "Failed Breakout" && Math.abs(high - resistance) <= threshold) {
+            base += ` This Failed Breakout is significant because it occurred exactly at the ₹${resistance.toFixed(2)} resistance level established earlier in this session.`;
+        } else if (pattern.label === "Failed Breakdown" && Math.abs(low - support) <= threshold) {
+            base += ` This Failed Breakdown is significant because it occurred exactly at the ₹${support.toFixed(2)} support level established earlier in this session.`;
+        } else if (pattern.label === "Spring" && Math.abs(low - support) <= threshold) {
+            base += ` The spring triggered precisely at the session support of ₹${support.toFixed(2)}, reinforcing that level as a strong demand zone.`;
+        } else if (pattern.label === "Compression" && Math.abs(last.close - mean) <= threshold) {
+            base += ` The compression is forming around the session mean of ₹${mean.toFixed(2)}, suggesting the market is coiling at a decision point.`;
+        } else if (high > resistance * 0.999 && high <= resistance * 1.02) {
+            base += ` This pattern approached the session resistance near ₹${resistance.toFixed(2)}.`;
+        } else if (low < support * 1.001 && low >= support * 0.98) {
+            base += ` This pattern approached the session support near ₹${support.toFixed(2)}.`;
+        }
+    }
+
+    return base;
 }
 
 // ── CATALYST: "Why did it matter?"
@@ -1054,15 +1151,45 @@ function priceActionLayer(pattern) {
         `spanning a range between ₹${low.toFixed(2)} and ₹${high.toFixed(2)}.`
     );
 
-    // Resistance detection for failed breakouts
-    if (pattern.label === "Failed Breakout" && idxs[0] > 0) {
-        const lbStart    = Math.max(0, idxs[0] - 10);
-        const resistance = Math.max(...allVisible.slice(lbStart, idxs[0]).map(c => c.high));
-        if (high > resistance) {
+    // Use dynamic session resistance/support if available, else fall back to local lookback
+    const sessionResistance = dynamicZones.resistance;
+    const sessionSupport    = dynamicZones.support;
+    const sessionMean       = dynamicZones.mean;
+
+    if (pattern.label === "Failed Breakout") {
+        // Prefer dynamic session resistance; fall back to 10-bar local high
+        const localResistance = idxs[0] > 0
+            ? Math.max(...allVisible.slice(Math.max(0, idxs[0] - 10), idxs[0]).map(c => c.high))
+            : null;
+        const resistance = sessionResistance || localResistance;
+
+        if (resistance !== null && high > resistance) {
             parts.push(
                 `Price briefly pushed above the resistance near ₹${resistance.toFixed(2)} ` +
-                `but was rejected and closed back below it.`
+                `but was rejected and closed back below it. ` +
+                `This rejection at the session high is a strong warning against further upside.`
             );
+        }
+    }
+
+    if (pattern.label === "Failed Breakdown" || pattern.label === "Spring") {
+        const localSupport = idxs[0] > 0
+            ? Math.min(...allVisible.slice(Math.max(0, idxs[0] - 10), idxs[0]).map(c => c.low))
+            : null;
+        const support = sessionSupport || localSupport;
+
+        if (support !== null && low < support) {
+            parts.push(
+                `Price briefly dipped below the support near ₹${support.toFixed(2)} ` +
+                `before snapping back — a classic liquidity sweep at the session low.`
+            );
+        }
+    }
+
+    if (sessionMean !== null) {
+        const meanProximity = (sessionResistance - sessionSupport) * 0.08;
+        if (Math.abs(close - sessionMean) <= meanProximity) {
+            parts.push(`Price closed near the session mean of ₹${sessionMean.toFixed(2)}, suggesting equilibrium between buyers and sellers.`);
         }
     }
 
