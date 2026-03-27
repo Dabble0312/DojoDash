@@ -888,16 +888,81 @@ const PATTERN_SHAPE = {
 // ── Keep track of which markers are on the chart so we can clear them
 let patternMarkersActive = false;
 
+// Maps seq_ column keys to label strings
+const SEQ_KEY_TO_LABEL = {
+    seq_compression:      "Compression",
+    seq_momentum_burst:   "Momentum Burst",
+    seq_failed_breakout:  "Failed Breakout",
+    seq_failed_breakdown: "Failed Breakdown",
+    seq_spring:           "Spring",
+    seq_engulfing_flip:   "Engulfing Flip",
+};
+
 /**
- * Returns detected_patterns entries whose ALL indices are within
- * the currently visible candle range (allCandles + revealedSoFar).
- * Future candles are never included.
+ * Returns ALL patterns visible so far:
+ *
+ * 1. Patterns from detected_patterns whose indices all fall within
+ *    allCandles (index 0..49) — these are pre-computed and rich.
+ *
+ * 2. Patterns synthesised from seq_* flags on revealedSoFar candles
+ *    by grouping consecutive runs of 1s per key. These cover future
+ *    candles that have been revealed but aren't in detected_patterns.
+ *
+ * Nothing from unrevealed future candles is ever included.
  */
 function getVisiblePatterns() {
+    // Part 1: pre-computed patterns (allCandles only, indices 0-49)
     const visibleCount = allCandles.length + revealedSoFar.length;
-    return detectedPatterns.filter(p =>
-        p.indices.every(idx => idx < visibleCount)
+    const precomputed  = detectedPatterns.filter(p =>
+        p.indices.every(idx => idx < allCandles.length)
     );
+
+    // Part 2: synthesise from seq_* flags on revealed future candles
+    const synthesised = [];
+    const seqKeys     = Object.keys(SEQ_KEY_TO_LABEL);
+
+    seqKeys.forEach(key => {
+        const label = SEQ_KEY_TO_LABEL[key];
+        let runStart = null;
+
+        revealedSoFar.forEach((candle, i) => {
+            if (candle[key] === 1) {
+                if (runStart === null) runStart = i;
+            } else {
+                if (runStart !== null) {
+                    synthesised.push(_buildSynthPattern(label, runStart, i - 1));
+                    runStart = null;
+                }
+            }
+        });
+        // Close any open run at the end of revealed candles
+        if (runStart !== null) {
+            synthesised.push(_buildSynthPattern(label, runStart, revealedSoFar.length - 1));
+        }
+    });
+
+    return [...precomputed, ...synthesised];
+}
+
+/**
+ * Build a synthetic pattern object (same shape as detected_patterns entries)
+ * from a run of seq_* flags on revealedSoFar.
+ * Indices are offset by allCandles.length so they can be looked up in
+ * [...allCandles, ...revealedSoFar].
+ */
+function _buildSynthPattern(label, revealStart, revealEnd) {
+    const offset  = allCandles.length;
+    const indices = [];
+    for (let i = revealStart; i <= revealEnd; i++) indices.push(offset + i);
+
+    return {
+        label:      label,
+        start_date: revealedSoFar[revealStart].date,
+        end_date:   revealedSoFar[revealEnd].date,
+        indices:    indices,
+        metadata:   { absolute_length: indices.length },
+        synthesised: true,   // flag so we can style differently if needed
+    };
 }
 
 // ── SEMANTIC: "What is this pattern?"
@@ -920,8 +985,9 @@ function semanticLayer(pattern) {
 
 // ── CONTEXTUAL: "Where did this happen?"
 function contextualLayer(pattern) {
-    const idxs  = pattern.indices;
-    const last  = allCandles[idxs[idxs.length - 1]];
+    const idxs      = pattern.indices;
+    const allVisible = [...allCandles, ...revealedSoFar];
+    const last       = allVisible[idxs[idxs.length - 1]];
 
     const trendMap = {
         "uptrend":   "during an uptrend",
@@ -942,7 +1008,8 @@ function contextualLayer(pattern) {
 
 // ── CATALYST: "Why did it matter?"
 function catalystLayer(pattern) {
-    const seq   = pattern.indices.map(i => allCandles[i]);
+    const allVisible = [...allCandles, ...revealedSoFar];
+    const seq        = pattern.indices.map(i => allVisible[i]);
     const vtags = seq.map(c => c.volume_tag);
 
     let volSentence;
@@ -967,10 +1034,11 @@ function catalystLayer(pattern) {
 
 // ── PRICE ACTION: "What did price actually do?"
 function priceActionLayer(pattern) {
-    const idxs  = pattern.indices;
-    const seq   = idxs.map(i => allCandles[i]);
-    const first = allCandles[idxs[0]];
-    const last  = allCandles[idxs[idxs.length - 1]];
+    const idxs       = pattern.indices;
+    const allVisible = [...allCandles, ...revealedSoFar];
+    const seq        = idxs.map(i => allVisible[i]);
+    const first      = allVisible[idxs[0]];
+    const last       = allVisible[idxs[idxs.length - 1]];
 
     const open  = first.open;
     const close = last.close;
@@ -987,8 +1055,8 @@ function priceActionLayer(pattern) {
 
     // Resistance detection for failed breakouts
     if (pattern.label === "Failed Breakout" && idxs[0] > 0) {
-        const lbStart  = Math.max(0, idxs[0] - 10);
-        const resistance = Math.max(...allCandles.slice(lbStart, idxs[0]).map(c => c.high));
+        const lbStart    = Math.max(0, idxs[0] - 10);
+        const resistance = Math.max(...allVisible.slice(lbStart, idxs[0]).map(c => c.high));
         if (high > resistance) {
             parts.push(
                 `Price briefly pushed above the resistance near ₹${resistance.toFixed(2)} ` +
@@ -1113,32 +1181,58 @@ function togglePatternExplain() {
     panel.classList.remove('hidden');
 }
 
-// ── DRAW MARKERS on chart for each visible pattern
+// ── DRAW MARKERS on chart — START marker + END marker per pattern
+// This makes the span clearly visible: start arrow + end arrow with label
 function drawPatternMarkers(patterns) {
     if (!candlestickSeries) return;
 
     const markers = [];
+    const allVisible = [...allCandles, ...revealedSoFar];
 
     patterns.forEach(p => {
-        const colour = PATTERN_COLOURS[p.label] || '#6366f1';
-        const shape  = PATTERN_SHAPE[p.label]   || 'arrowUp';
+        const colour     = PATTERN_COLOURS[p.label] || '#6366f1';
+        const firstIdx   = p.indices[0];
+        const lastIdx    = p.indices[p.indices.length - 1];
+        const firstCandle = allVisible[firstIdx];
+        const lastCandle  = allVisible[lastIdx];
 
-        // Mark on the LAST candle of the pattern
-        const lastIdx  = p.indices[p.indices.length - 1];
-        const candle   = allCandles[lastIdx];
-        if (!candle) return;
+        if (!firstCandle || !lastCandle) return;
 
+        const isBullishPattern = ["Momentum Burst", "Failed Breakdown", "Spring"].includes(p.label);
+        const position         = isBullishPattern ? 'belowBar' : 'aboveBar';
+        const startShape       = isBullishPattern ? 'arrowUp'  : 'arrowDown';
+        const endShape         = 'circle';
+
+        // START marker — labelled with pattern name
         markers.push({
-            time:     candle.date.slice(0, 10),
-            position: shape.includes('Down') ? 'aboveBar' : 'belowBar',
+            time:     firstCandle.date.slice(0, 10),
+            position: position,
             color:    colour,
-            shape:    shape,
+            shape:    startShape,
             text:     p.label,
+            size:     1,
         });
+
+        // END marker — only add if it's a different candle (multi-candle patterns)
+        if (firstCandle.date !== lastCandle.date) {
+            markers.push({
+                time:     lastCandle.date.slice(0, 10),
+                position: position,
+                color:    colour,
+                shape:    endShape,
+                text:     `↑ end`,
+                size:     1,
+            });
+        }
     });
 
-    // Sort by time (required by Lightweight Charts)
-    markers.sort((a, b) => a.time.localeCompare(b.time));
+    // Lightweight Charts requires markers sorted by time
+    markers.sort((a, b) => {
+        if (a.time < b.time) return -1;
+        if (a.time > b.time) return 1;
+        return 0;
+    });
+
     candlestickSeries.setMarkers(markers);
     patternMarkersActive = true;
 }
