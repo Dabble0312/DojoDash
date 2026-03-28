@@ -1511,27 +1511,15 @@ function drawPatternMarkers(patterns) {
         const startShape       = isBullishPattern ? 'arrowUp'  : 'arrowDown';
         const endShape         = 'circle';
 
-        // START marker — labelled with pattern name
+        // Label-only marker on the first candle — thin arrow, no end dot
         markers.push({
             time:     firstCandle.date.slice(0, 10),
             position: position,
             color:    colour,
             shape:    startShape,
             text:     p.label,
-            size:     1,
+            size:     0,   // size 0 = smallest possible arrow
         });
-
-        // END marker — only add if it's a different candle (multi-candle patterns)
-        if (firstCandle.date !== lastCandle.date) {
-            markers.push({
-                time:     lastCandle.date.slice(0, 10),
-                position: position,
-                color:    colour,
-                shape:    endShape,
-                text:     `↑ end`,
-                size:     1,
-            });
-        }
     });
 
     // Lightweight Charts requires markers sorted by time
