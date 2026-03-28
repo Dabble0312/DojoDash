@@ -150,6 +150,11 @@ function initChart() {
         rightPriceScale: {
             scaleMargins: { top: 0.05, bottom: 0.25 },
         },
+        // CrosshairMode 0 = Normal (free movement)
+        // CrosshairMode 1 = Magnet (snaps to OHLC values) — the default, causes issue
+        crosshair: {
+            mode: 0,
+        },
     });
 
     candlestickSeries = chart.addCandlestickSeries({
@@ -178,15 +183,13 @@ function initChart() {
 
     renderChart();
 
-    // Lock y-axis using all candles so reveals never rescale
-    const every = [...allCandles, ...futureCandles];
-    const yMin  = Math.min(...every.map(c => c.low))  * 0.995;
-    const yMax  = Math.max(...every.map(c => c.high)) * 1.005;
-
+    // Let the chart autoscale to the visible candles only.
+    // Removing autoscaleInfoProvider means LightweightCharts will
+    // fit the y-axis to whatever candles are currently on screen —
+    // the candles will fill the chart naturally without the scale
+    // being crushed by 150 unseen future candles.
     candlestickSeries.applyOptions({
-        autoscaleInfoProvider: () => ({
-            priceRange: { minValue: yMin, maxValue: yMax },
-        }),
+        autoscaleInfoProvider: undefined,
     });
 
     chart.timeScale().fitContent();
@@ -218,6 +221,17 @@ function initChart() {
         // If summary panel is open, refresh it for the newly clicked candle
         refreshSummaryIfOpen(matched);
     });
+
+    // Redraw zone overlays whenever the viewport changes (pan/zoom/resize)
+    chart.timeScale().subscribeVisibleLogicalRangeChange(() => {
+        requestAnimationFrame(drawZoneOverlays);
+    });
+    chart.subscribeCrosshairMove(() => {
+        // Lightweight Charts redraws on crosshair move — overlay must keep up
+        requestAnimationFrame(drawZoneOverlays);
+    });
+
+    setupZoneCanvas(chartDiv);
 }
 
 
@@ -974,6 +988,120 @@ function _buildSynthPattern(label, revealStart, revealEnd) {
 }
 
 /* -----------------------------------------
+   PATTERN ZONE OVERLAY (canvas-based rectangles)
+   LightweightCharts has no native rectangle primitive.
+   We overlay a <canvas> on the chart div and use the
+   chart's coordinate-conversion API to position zones.
+----------------------------------------- */
+
+let zoneCanvas     = null;
+let zoneCtx        = null;
+let activeZones    = [];   // [{label, startDate, endDate, high, low, colour}]
+
+const ZONE_ALPHA = 0.13;   // fill opacity — subtle, not distracting
+
+function setupZoneCanvas(chartDiv) {
+    // Remove any existing canvas first (block reload)
+    const old = chartDiv.querySelector('.zone-overlay-canvas');
+    if (old) old.remove();
+
+    zoneCanvas = document.createElement('canvas');
+    zoneCanvas.className = 'zone-overlay-canvas';
+    zoneCanvas.style.cssText = `
+        position:absolute; top:0; left:0;
+        width:100%; height:100%;
+        pointer-events:none;
+        z-index:2;
+    `;
+    // chartDiv needs position:relative so the canvas sits on top
+    chartDiv.style.position = 'relative';
+    chartDiv.appendChild(zoneCanvas);
+    zoneCtx = zoneCanvas.getContext('2d');
+}
+
+function drawZoneOverlays() {
+    if (!zoneCanvas || !zoneCtx || !chart || !candlestickSeries) return;
+
+    // Match canvas pixel size to its display size
+    const rect = zoneCanvas.getBoundingClientRect();
+    zoneCanvas.width  = rect.width;
+    zoneCanvas.height = rect.height;
+    zoneCtx.clearRect(0, 0, zoneCanvas.width, zoneCanvas.height);
+
+    if (activeZones.length === 0) return;
+
+    activeZones.forEach(zone => {
+        try {
+            const x1 = chart.timeScale().timeToCoordinate(zone.startDate);
+            const x2 = chart.timeScale().timeToCoordinate(zone.endDate);
+            const y1 = candlestickSeries.priceToCoordinate(zone.high);
+            const y2 = candlestickSeries.priceToCoordinate(zone.low);
+
+            if (x1 === null || x2 === null || y1 === null || y2 === null) return;
+
+            const left   = Math.min(x1, x2) - 6;   // 6px padding on each side
+            const right  = Math.max(x1, x2) + 6;
+            const top    = Math.min(y1, y2) - 4;
+            const bottom = Math.max(y1, y2) + 4;
+            const width  = right - left;
+            const height = bottom - top;
+            const radius = 6;
+
+            zoneCtx.save();
+            zoneCtx.globalAlpha = ZONE_ALPHA;
+            zoneCtx.fillStyle   = zone.colour;
+
+            // Rounded rectangle
+            zoneCtx.beginPath();
+            zoneCtx.moveTo(left + radius, top);
+            zoneCtx.lineTo(right - radius, top);
+            zoneCtx.quadraticCurveTo(right, top, right, top + radius);
+            zoneCtx.lineTo(right, bottom - radius);
+            zoneCtx.quadraticCurveTo(right, bottom, right - radius, bottom);
+            zoneCtx.lineTo(left + radius, bottom);
+            zoneCtx.quadraticCurveTo(left, bottom, left, bottom - radius);
+            zoneCtx.lineTo(left, top + radius);
+            zoneCtx.quadraticCurveTo(left, top, left + radius, top);
+            zoneCtx.closePath();
+            zoneCtx.fill();
+
+            // Subtle border — same colour, slightly more opaque
+            zoneCtx.globalAlpha = ZONE_ALPHA * 2.5;
+            zoneCtx.strokeStyle = zone.colour;
+            zoneCtx.lineWidth   = 1;
+            zoneCtx.stroke();
+
+            zoneCtx.restore();
+        } catch(e) { /* coordinate may be out of range */ }
+    });
+}
+
+function setActiveZones(patterns) {
+    const allVisible = [...allCandles, ...revealedSoFar];
+    activeZones = patterns.map(p => {
+        const seq    = p.indices.map(i => allVisible[i]).filter(Boolean);
+        if (seq.length === 0) return null;
+        return {
+            label:     p.label,
+            startDate: seq[0].date.slice(0, 10),
+            endDate:   seq[seq.length - 1].date.slice(0, 10),
+            high:      Math.max(...seq.map(c => c.high)),
+            low:       Math.min(...seq.map(c => c.low)),
+            colour:    PATTERN_COLOURS[p.label] || '#6366f1',
+        };
+    }).filter(Boolean);
+
+    requestAnimationFrame(drawZoneOverlays);
+}
+
+function clearZoneOverlays() {
+    activeZones = [];
+    if (zoneCtx && zoneCanvas) {
+        zoneCtx.clearRect(0, 0, zoneCanvas.width, zoneCanvas.height);
+    }
+}
+
+/* -----------------------------------------
    DYNAMIC ZONE TRACKER
    Runs every reveal. Calculates Resistance (high),
    Support (low), and Mean (avg close) from all
@@ -1290,12 +1418,13 @@ function renderPatternPills() {
         </span>`;
     }).join('');
 
-    // Draw markers for active filter or all
+    // Draw markers + zone overlays for active filter or all
     const toMark = activePatternFilter
         ? visible.filter(p => p.label === activePatternFilter)
         : visible;
 
     drawPatternMarkers(toMark);
+    setActiveZones(toMark);
 }
 
 // ── Called when user clicks a pill
@@ -1416,12 +1545,13 @@ function drawPatternMarkers(patterns) {
     patternMarkersActive = true;
 }
 
-// ── CLEAR chart markers
+// ── CLEAR chart markers and zone overlays
 function clearPatternHighlights() {
     if (candlestickSeries && patternMarkersActive) {
         candlestickSeries.setMarkers([]);
         patternMarkersActive = false;
     }
+    clearZoneOverlays();
 }
 
 // ── HIDE both panels (called on new block load)
