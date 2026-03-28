@@ -904,7 +904,7 @@ const PATTERN_SHAPE = {
 
 // ── Keep track of which markers are on the chart so we can clear them
 let patternMarkersActive = false;
-let activePatternFilter  = null;  // null = show all, string = show only this label
+let activePatternFilter  = new Set();  // empty = show all, else show only selected labels
 
 // Dynamic zone price lines — updated every reveal
 let dynamicZones = { resistance: null, support: null, mean: null };
@@ -1370,11 +1370,11 @@ function togglePatterns() {
     if (!panel.classList.contains('hidden')) {
         panel.classList.add('hidden');
         clearPatternHighlights();
-        activePatternFilter = null;
+        activePatternFilter = new Set();
         return;
     }
 
-    activePatternFilter = null;  // reset filter on fresh open
+    activePatternFilter = new Set();  // reset filter on fresh open
     renderPatternPills();
     panel.classList.remove('hidden');
 }
@@ -1427,13 +1427,12 @@ function renderPatternPills() {
     setActiveZones(toMark);
 }
 
-// ── Called when user clicks a pill
+// ── Called when user clicks a pill — toggles that label in/out of the active set
 function filterPattern(label) {
-    // Clicking the already-active filter resets to show all
-    if (activePatternFilter === label) {
-        activePatternFilter = null;
+    if (activePatternFilter.has(label)) {
+        activePatternFilter.delete(label);
     } else {
-        activePatternFilter = label;
+        activePatternFilter.add(label);
     }
     renderPatternPills();
 
@@ -1464,8 +1463,8 @@ function renderPatternExplain() {
     if (!panel) return;
 
     const visible  = getVisiblePatterns();
-    const filtered = activePatternFilter
-        ? visible.filter(p => p.label === activePatternFilter)
+    const filtered = activePatternFilter.size > 0
+        ? visible.filter(p => activePatternFilter.has(p.label))
         : visible;
 
     if (filtered.length === 0) {
@@ -1548,7 +1547,7 @@ function hidePatternPanels() {
     const ep = document.getElementById('patternExplainPanel');
     if (pp) pp.classList.add('hidden');
     if (ep) ep.classList.add('hidden');
-    activePatternFilter = null;
+    activePatternFilter = new Set();
 }
 
 /* -----------------------------------------
@@ -1559,3 +1558,4 @@ window.addEventListener('DOMContentLoaded', () => {
     if (display) display.textContent = 'Player: ' + username;
     loadFocusBlock();
 });
+    
