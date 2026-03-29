@@ -1397,16 +1397,16 @@ function renderPatternPills() {
         byLabel[p.label].push(p);
     });
 
-    // Build pills — active filter gets full colour, others dim
+    // Build pills — selected labels get full colour, unselected dim
     panel.innerHTML = Object.entries(byLabel).map(([label, patterns]) => {
-        const colour    = PATTERN_COLOURS[label] || '#6366f1';
-        const isActive  = activePatternFilter === label;
-        const isAnyActive = activePatternFilter !== null;
+        const colour      = PATTERN_COLOURS[label] || '#6366f1';
+        const isSelected  = activePatternFilter.has(label);
+        const anySelected = activePatternFilter.size > 0;
 
-        const bg      = isActive  ? colour : `${colour}20`;
-        const border  = isActive  ? colour : `${colour}40`;
-        const text    = isActive  ? '#fff'  : colour;
-        const opacity = (isAnyActive && !isActive) ? '0.4' : '1';
+        const bg      = isSelected ? colour : `${colour}20`;
+        const border  = isSelected ? colour : `${colour}40`;
+        const text    = isSelected ? '#fff'  : colour;
+        const opacity = (anySelected && !isSelected) ? '0.4' : '1';
 
         return `<span
             class="pattern-tag pattern-pill-btn"
@@ -1418,9 +1418,9 @@ function renderPatternPills() {
         </span>`;
     }).join('');
 
-    // Draw markers + zone overlays for active filter or all
-    const toMark = activePatternFilter
-        ? visible.filter(p => p.label === activePatternFilter)
+    // Draw markers + zone overlays for selected labels only, or all if none selected
+    const toMark = activePatternFilter.size > 0
+        ? visible.filter(p => activePatternFilter.has(p.label))
         : visible;
 
     drawPatternMarkers(toMark);
@@ -1558,4 +1558,3 @@ window.addEventListener('DOMContentLoaded', () => {
     if (display) display.textContent = 'Player: ' + username;
     loadFocusBlock();
 });
-    
