@@ -1,95 +1,95 @@
 /**
  * focus-narate.js
- * Real-time Narrator Engine
+ * THE POST-BURST ANALYST ENGINE
  */
 
 let narratorActive = false;
-let lastSpokenIndex = -1;
 
-// 1. THE TOGGLE (Called by the HTML Button)
+/**
+ * Toggles the narrator state and updates the UI button
+ */
 function toggleNarrator() {
-    const btn = document.getElementById('narratorBtn');
-    const icon = document.getElementById('narratorIcon');
-    
     narratorActive = !narratorActive;
+    const btn = document.getElementById('narratorBtn');
+    
+    if (!btn) return;
 
     if (narratorActive) {
         btn.classList.add('active');
         btn.innerHTML = `<span id="narratorIcon">🎙️</span> Narrator On`;
-        // Immediate check in case candles are already revealed
-        runNarratorEngine();
+        // Optional: Speak an intro when turned on
+        speak("Narrator active. Analyzing market flow.");
     } else {
         btn.classList.remove('active');
         btn.innerHTML = `<span id="narratorIcon">🔊</span> Narrator Off`;
-        window.speechSynthesis.cancel(); // Stop talking immediately
+        window.speechSynthesis.cancel();
     }
 }
 
-// 2. THE TRIGGER (Called by focus-core.js inside revealNext)
+/**
+ * The main engine called by focus-core.js AFTER a reveal burst completes
+ */
 function runNarratorEngine() {
-    // Safety checks
-    if (!narratorActive || typeof revealedSoFar === 'undefined' || revealedSoFar.length === 0) return;
+    if (!narratorActive || !window.revealedSoFar || revealedSoFar.length === 0) return;
 
-    const currentIndex = revealedSoFar.length - 1;
-
-    // Prevent re-triggering the same candle logic
-    if (currentIndex === lastSpokenIndex) return;
-
-    const candle = revealedSoFar[currentIndex];
-    let textToSpeak = "";
-
-    // A. Priority 1: Check for Pattern Starts (Level 2)
-    // detectedPatterns is global from focus-core.js
-    const startingPattern = (typeof detectedPatterns !== 'undefined') 
-        ? detectedPatterns.find(p => p.indices[0] === currentIndex) 
-        : null;
-
-    if (startingPattern) {
-        textToSpeak = getPatternNarrative(startingPattern);
-    } 
-    // B. Priority 2: Check for Key Candles (Level 1)
-    else if (isKeyCandle(candle)) {
-        // summarize(candle) is from focus-summary.js
-        textToSpeak = summarize(candle);
-    }
-
-    // C. Execute Speech
-    if (textToSpeak) {
-        speak(textToSpeak);
-        lastSpokenIndex = currentIndex;
-    }
-}
-
-// --- HELPERS ---
-
-function speak(text) {
-    // Cancel previous speech so it doesn't queue up and get delayed
-    window.speechSynthesis.cancel();
+    // 1. Get the size of the move just revealed (e.g., 4 days, 10 days)
+    const revealSelect = document.getElementById('revealCountSelect');
+    const burstSize = revealSelect ? parseInt(revealSelect.value) : 1;
     
+    // 2. Grab the most recent candles revealed in this specific burst
+    const recentBurst = revealedSoFar.slice(-burstSize);
+    const ups = recentBurst.filter(c => c.close > c.open).length;
+    const downs = recentBurst.length - ups;
+    const lastCandle = recentBurst[recentBurst.length - 1];
+
+    let commentary = "";
+
+    // 3. CHECK FOR PATTERNS: Did a major pattern just complete?
+    const latestPattern = (window.detectedPatterns || [])
+        .filter(p => p.indices.some(idx => idx >= (allCandles.length + revealedSoFar.length - burstSize)))
+        .pop();
+
+    if (latestPattern) {
+        commentary += `Significant signal detected: ${latestPattern.label}. `;
+    }
+
+    // 4. MOMENTUM ANALYSIS: What was the "Vibe" of the burst?
+    if (ups > downs && ups >= (burstSize * 0.6)) {
+        commentary += "A strong bullish sequence. Buyers are currently dominating the tape. ";
+    } else if (downs > ups && downs >= (burstSize * 0.6)) {
+        commentary += "Heavy selling pressure here. The bears are driving this move lower. ";
+    } else if (burstSize > 1) {
+        commentary += "The move was choppy and balanced. No clear winner in this sequence. ";
+    }
+
+    // 5. THE FINAL BRIDGE: How did the very last candle close?
+    if (lastCandle.candle_strength === 'strong') {
+        const dir = lastCandle.close > lastCandle.open ? "high" : "low";
+        commentary += `The sequence ended with a strong close near the ${dir}, suggesting follow-through.`;
+    } else {
+        commentary += "We're seeing some stalling or indecision at the end of this move.";
+    }
+
+    speak(commentary);
+}
+
+/**
+ * Handles the actual Speech Synthesis
+ */
+function speak(text) {
+    // Stop any current speaking to avoid overlapping
+    window.speechSynthesis.cancel(); 
+
     const msg = new SpeechSynthesisUtterance(text);
-    msg.rate = 0.95; 
-    msg.pitch = 1.0;
+    
+    // Voice Settings
+    msg.rate = 1.0;  // Normal speed
+    msg.pitch = 1.0; // Normal pitch
+    
+    // Attempt to use a cleaner voice if the browser supports it
+    const voices = window.speechSynthesis.getVoices();
+    const naturalVoice = voices.find(v => v.name.includes('Google') || v.name.includes('Natural'));
+    if (naturalVoice) msg.voice = naturalVoice;
+
     window.speechSynthesis.speak(msg);
-}
-
-function isKeyCandle(candle) {
-    return (
-        candle.outside_bar === 1 || 
-        candle.engulfing_soft === 1 || 
-        candle.failed_breakdown === 1 || 
-        candle.failed_breakout === 1 ||
-        candle.candle_strength === 'strong'
-    );
-}
-
-function getPatternNarrative(p) {
-    const length = p.metadata?.absolute_length || p.indices.length;
-    const map = {
-        "Failed Breakdown": `Notice this Failed Breakdown. Price dipped, but sellers couldn't hold it, creating a trap.`,
-        "Failed Breakout": `A Failed Breakout here. Bulls pushed high but got rejected, leaving buyers stranded.`,
-        "Momentum Burst": `This is a Momentum Burst. High conviction over ${length} candles showing a clear aggressive move.`,
-        "Engulfing Flip": `An Engulfing Flip. The market sentiment just did a 180-degree turn in a single candle.`,
-        "Compression": `Volatility is drying up into a ${length} candle compression. The market is coiling.`
-    };
-    return map[p.label] || `A ${p.label} pattern is forming over ${length} candles.`;
 }
