@@ -45,7 +45,7 @@ body {
 /* --- CHART & GAME HUD --- */
 #chart {
   width: 100%;
-  height: 501px/*var(--chart-height). comment made to test debug because chart not loading*/;
+  height: *var(--chart-height);
   background: white;
   border-radius: var(--card-radius);
   border: 1px solid rgba(0,0,0,0.05);
