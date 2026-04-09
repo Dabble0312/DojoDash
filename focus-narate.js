@@ -1,67 +1,77 @@
 /**
- * focus-narrator.js
- * Combines focus-summary.js (Level 1) and focus-patterns.js (Level 2)
- * into a single chronological narrative script.
+ * focus-narate.js
+ * Real-time Narrator Engine
  */
 
-function generateNarrativeScript(block) {
-    const candles = block.candles;
-    const patterns = block.detected_patterns || [];
-    const script = [];
+let narratorActive = false;
+let lastSpokenIndex = -1;
 
-    // 1. INTRO BEAT
-    script.push({
-        index: 0,
-        type: 'INTRO',
-        text: `Starting analysis for block ${block.id}. We have ${candles.length} candles to review. The current trend is ${block.trend_tag || 'developing'}.`
-    });
+// 1. THE TOGGLE (Called by the HTML Button)
+function toggleNarrator() {
+    const btn = document.getElementById('narratorBtn');
+    const icon = document.getElementById('narratorIcon');
+    
+    narratorActive = !narratorActive;
 
-    // 2. CHRONOLOGICAL LOOP
-    candles.forEach((candle, i) => {
-        let spokeThisCandle = false;
-
-        // Check if a pattern STARTS on this candle (Level 2)
-        const startingPatterns = patterns.filter(p => p.indices[0] === i);
-        
-        startingPatterns.forEach(p => {
-            // We use the pattern label and can add custom logic here
-            const patternDesc = getPatternNarrative(p); 
-            script.push({
-                index: i,
-                type: 'PATTERN',
-                label: p.label,
-                text: patternDesc
-            });
-            spokeThisCandle = true;
-        });
-
-        // If no pattern, check if the candle is "Important" (Level 1)
-        if (!spokeThisCandle) {
-            // summarize(candle) comes from your focus-summary.js
-            const candleText = summarize(candle); 
-            
-            // We only want to narrate "Interesting" candles to avoid a wall of noise
-            if (isKeyCandle(candle)) {
-                script.push({
-                    index: i,
-                    type: 'CANDLE',
-                    text: candleText
-                });
-            }
-        }
-    });
-
-    // 3. OUTRO BEAT
-    script.push({
-        index: candles.length - 1,
-        type: 'OUTRO',
-        text: "That's the full sequence. The structure is now clear. What's your move?"
-    });
-
-    return script;
+    if (narratorActive) {
+        btn.classList.add('active');
+        btn.innerHTML = `<span id="narratorIcon">🎙️</span> Narrator On`;
+        // Immediate check in case candles are already revealed
+        runNarratorEngine();
+    } else {
+        btn.classList.remove('active');
+        btn.innerHTML = `<span id="narratorIcon">🔊</span> Narrator Off`;
+        window.speechSynthesis.cancel(); // Stop talking immediately
+    }
 }
 
-// Helper to define "Interesting" candles so the narrator isn't annoying
+// 2. THE TRIGGER (Called by focus-core.js inside revealNext)
+function runNarratorEngine() {
+    // Safety checks
+    if (!narratorActive || typeof revealedSoFar === 'undefined' || revealedSoFar.length === 0) return;
+
+    const currentIndex = revealedSoFar.length - 1;
+
+    // Prevent re-triggering the same candle logic
+    if (currentIndex === lastSpokenIndex) return;
+
+    const candle = revealedSoFar[currentIndex];
+    let textToSpeak = "";
+
+    // A. Priority 1: Check for Pattern Starts (Level 2)
+    // detectedPatterns is global from focus-core.js
+    const startingPattern = (typeof detectedPatterns !== 'undefined') 
+        ? detectedPatterns.find(p => p.indices[0] === currentIndex) 
+        : null;
+
+    if (startingPattern) {
+        textToSpeak = getPatternNarrative(startingPattern);
+    } 
+    // B. Priority 2: Check for Key Candles (Level 1)
+    else if (isKeyCandle(candle)) {
+        // summarize(candle) is from focus-summary.js
+        textToSpeak = summarize(candle);
+    }
+
+    // C. Execute Speech
+    if (textToSpeak) {
+        speak(textToSpeak);
+        lastSpokenIndex = currentIndex;
+    }
+}
+
+// --- HELPERS ---
+
+function speak(text) {
+    // Cancel previous speech so it doesn't queue up and get delayed
+    window.speechSynthesis.cancel();
+    
+    const msg = new SpeechSynthesisUtterance(text);
+    msg.rate = 0.95; 
+    msg.pitch = 1.0;
+    window.speechSynthesis.speak(msg);
+}
+
 function isKeyCandle(candle) {
     return (
         candle.outside_bar === 1 || 
@@ -72,7 +82,6 @@ function isKeyCandle(candle) {
     );
 }
 
-// Helper to give patterns a "Narrative" voice
 function getPatternNarrative(p) {
     const length = p.metadata?.absolute_length || p.indices.length;
     const map = {
