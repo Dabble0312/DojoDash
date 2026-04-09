@@ -55,7 +55,7 @@ async function loadFocusBlock() {
     showStatus("Loading chart...");
 
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('focus_blocks')
             .select('id, block_id, candles, future, window_start, detected_patterns')
             .order('id')
