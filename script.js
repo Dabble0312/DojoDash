@@ -60,7 +60,7 @@ window.addEventListener("DOMContentLoaded", () => {
 ----------------------------------------- */
 async function loadRandomBlock() {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('chart_blocks')
             .select('id, block_id, candles, future, window_start')
             .order('id')
