@@ -81,7 +81,7 @@ async function loadTradingBlock() {
 
     try {
         const { data, error } = await supabaseClient
-            .from('focus_blocks')   // Uses same table as Focus Mode
+            .from('trading_blocks')   // Uses same table as Focus Mode
             .select('id, block_id, candles, future, window_start')
             .order('id')
             .limit(500);
@@ -125,8 +125,10 @@ async function loadTradingBlock() {
 function initChart() {
     const chartDiv = document.getElementById('chart');
     if (chart) chart.remove();
+    chartDiv.innerHTML = '';
 
     chart = window.LightweightCharts.createChart(chartDiv, {
+        height: 501,
         layout: { textColor: '#000', backgroundColor: '#fff' },
         timeScale: { timeVisible: true, secondsVisible: false, rightOffset: 4 },
         rightPriceScale: { scaleMargins: { top: 0.05, bottom: 0.25 } },
