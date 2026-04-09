@@ -5,7 +5,7 @@
 //   3. supabase.js (this)  ← creates the client
 //   4. page script(s)
 
-const supabase = window.supabase.createClient(
+const supabaseClient = window.supabase.createClient(
     SUPABASE_URL,
     SUPABASE_ANON_KEY
 );
