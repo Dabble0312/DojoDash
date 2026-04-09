@@ -1,24 +1,17 @@
 /**
- * focus-narate.js
- * THE POST-BURST ANALYST ENGINE
+ * focus-narate.js - THE MARKET ORACLE ENGINE
+ * Version: MAXIMUM BEEF
  */
 
 let narratorActive = false;
 
-/**
- * Toggles the narrator state and updates the UI button
- */
 function toggleNarrator() {
     narratorActive = !narratorActive;
     const btn = document.getElementById('narratorBtn');
-    
-    if (!btn) return;
-
     if (narratorActive) {
         btn.classList.add('active');
         btn.innerHTML = `<span id="narratorIcon">🎙️</span> Narrator On`;
-        // Optional: Speak an intro when turned on
-        speak("Narrator active. Analyzing market flow.");
+        readTheFullStory(); // Immediate deep-dive analysis
     } else {
         btn.classList.remove('active');
         btn.innerHTML = `<span id="narratorIcon">🔊</span> Narrator Off`;
@@ -26,70 +19,98 @@ function toggleNarrator() {
     }
 }
 
-/**
- * The main engine called by focus-core.js AFTER a reveal burst completes
- */
+// THE DEEP DIVE: Combines Pattern Dates, Volume, and Mean
+function readTheFullStory() {
+    if (!allCandles || allCandles.length === 0) return;
+
+    const history = allCandles;
+    const latestReveal = window.revealedSoFar || [];
+    
+    // 1. ANALYZE THE VIBE (Using Volume & Mean from your data)
+    const avgVol = history.reduce((a, b) => a + (b.volume || 0), 0) / history.length;
+    const lastVol = history[history.length - 1].volume || 0;
+    const volStatus = lastVol > avgVol * 1.5 ? "on explosive volume" : "with steady participation";
+    
+    // 2. THE PATTERN RECOGNITION (Stitching the "When")
+    const patterns = window.detectedPatterns || [];
+    let patternStory = "";
+    if (patterns.length > 0) {
+        const p = patterns[patterns.length - 1];
+        patternStory = `We established a ${p.label} recently. `;
+    }
+
+    // 3. THE "BEEFED UP" SENTENCE BANK (20 Random Combinations for "AI" feel)
+    const intros = [
+        "Scanning the tape. ", "Listen closely. ", "The chart is whispering. ", 
+        "Market structure analysis complete. ", "Price action is revealing a narrative. "
+    ];
+    
+    const statusQuotes = [
+        `The bulls are trying to defend the mean, ${volStatus}.`,
+        `Distribution is evident here; the smart money is offloading.`,
+        `We are seeing classic absorption at these levels.`,
+        `The bears are exhausted, but the bulls haven't stepped up yet.`,
+        `This is a textbook squeeze play in the making.`,
+        `Price is currently overextended from the mean, watch for a snap-back.`,
+        `Volume is drying up, suggesting a massive breakout is imminent.`,
+        `The sellers are hitting the bids hard, but price isn't budging. That's hidden strength.`,
+        `Clean trend lines are being respected, almost too perfectly.`,
+        `This is a volatile regime change. Buckle up.`
+    ];
+
+    const conclusion = latestReveal.length > 0 ? 
+        "The new candles suggest this story isn't over." : 
+        "Make your move before the next reveal.";
+
+    const fullScript = `${intros[Math.floor(Math.random()*intros.length)]} ${patternStory} ${statusQuotes[Math.floor(Math.random()*statusQuotes.length)]} ${conclusion}`;
+    
+    speak(fullScript);
+}
+
+// THE POST-REVEAL COMMENTARY
 function runNarratorEngine() {
     if (!narratorActive || !window.revealedSoFar || revealedSoFar.length === 0) return;
 
-    // 1. Get the size of the move just revealed (e.g., 4 days, 10 days)
-    const revealSelect = document.getElementById('revealCountSelect');
-    const burstSize = revealSelect ? parseInt(revealSelect.value) : 1;
+    const burstSize = parseInt(document.getElementById('revealCountSelect')?.value || 1);
+    const recent = revealedSoFar.slice(-burstSize);
     
-    // 2. Grab the most recent candles revealed in this specific burst
-    const recentBurst = revealedSoFar.slice(-burstSize);
-    const ups = recentBurst.filter(c => c.close > c.open).length;
-    const downs = recentBurst.length - ups;
-    const lastCandle = recentBurst[recentBurst.length - 1];
-
+    // DYNAMIC SENTENCE BUILDER
     let commentary = "";
-
-    // 3. CHECK FOR PATTERNS: Did a major pattern just complete?
-    const latestPattern = (window.detectedPatterns || [])
-        .filter(p => p.indices.some(idx => idx >= (allCandles.length + revealedSoFar.length - burstSize)))
-        .pop();
-
-    if (latestPattern) {
-        commentary += `Significant signal detected: ${latestPattern.label}. `;
-    }
-
-    // 4. MOMENTUM ANALYSIS: What was the "Vibe" of the burst?
-    if (ups > downs && ups >= (burstSize * 0.6)) {
-        commentary += "A strong bullish sequence. Buyers are currently dominating the tape. ";
-    } else if (downs > ups && downs >= (burstSize * 0.6)) {
-        commentary += "Heavy selling pressure here. The bears are driving this move lower. ";
-    } else if (burstSize > 1) {
-        commentary += "The move was choppy and balanced. No clear winner in this sequence. ";
-    }
-
-    // 5. THE FINAL BRIDGE: How did the very last candle close?
-    if (lastCandle.candle_strength === 'strong') {
-        const dir = lastCandle.close > lastCandle.open ? "high" : "low";
-        commentary += `The sequence ended with a strong close near the ${dir}, suggesting follow-through.`;
+    const isBullishBurst = recent.filter(c => c.close > c.open).length > (burstSize / 2);
+    
+    if (isBullishBurst) {
+        const bullLines = [
+            "Buyers are stepping in with massive conviction.",
+            "That's a clean break through resistance.",
+            "Shorts are getting squeezed here. The pain is real.",
+            "Demand is completely overwhelming the available supply.",
+            "This is an aggressive mark-up phase."
+        ];
+        commentary = bullLines[Math.floor(Math.random()*bullLines.length)];
     } else {
-        commentary += "We're seeing some stalling or indecision at the end of this move.";
+        const bearLines = [
+            "The floor just gave way. Aggressive selling.",
+            "Bull trap confirmed. They're being liquidated.",
+            "The sellers are in a frenzy now.",
+            "Price is falling under its own weight.",
+            "Heavy distribution. The trend has snapped."
+        ];
+        commentary = bearLines[Math.floor(Math.random()*bearLines.length)];
+    }
+
+    // Stitch it to the pattern if one exists
+    const p = (window.detectedPatterns || []).pop();
+    if (p && p.indices.includes(allCandles.length + revealedSoFar.length - 1)) {
+        commentary += ` Look at that ${p.label} play out!`;
     }
 
     speak(commentary);
 }
 
-/**
- * Handles the actual Speech Synthesis
- */
 function speak(text) {
-    // Stop any current speaking to avoid overlapping
     window.speechSynthesis.cancel(); 
-
     const msg = new SpeechSynthesisUtterance(text);
-    
-    // Voice Settings
-    msg.rate = 1.0;  // Normal speed
-    msg.pitch = 1.0; // Normal pitch
-    
-    // Attempt to use a cleaner voice if the browser supports it
-    const voices = window.speechSynthesis.getVoices();
-    const naturalVoice = voices.find(v => v.name.includes('Google') || v.name.includes('Natural'));
-    if (naturalVoice) msg.voice = naturalVoice;
-
+    msg.rate = 1.05; // Slightly faster "News" pace
+    msg.pitch = 0.9; // Slightly lower "Serious Analyst" pitch
     window.speechSynthesis.speak(msg);
 }
