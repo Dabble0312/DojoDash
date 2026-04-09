@@ -387,7 +387,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ── Bind button listeners
     const el = id => document.getElementById(id);
-
+    if (el('narratorBtn')) el('narratorBtn').addEventListener('click', toggleNarrator);
     if (el('revealBtn'))               el('revealBtn').addEventListener('click', startAutoReveal);
     if (el('upBtn'))                   el('upBtn').addEventListener('click', () => handleGuess('up'));
     if (el('downBtn'))                 el('downBtn').addEventListener('click', () => handleGuess('down'));
