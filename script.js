@@ -100,8 +100,10 @@ async function loadRandomBlock() {
 function initChart() {
     const chartDiv = document.getElementById('chart');
     if (chart) chart.remove();
+    chartDiv.innerHTML = '';
 
     chart = window.LightweightCharts.createChart(chartDiv, {
+        height: 501,
         layout: {
             textColor: '#000',
             backgroundColor: '#fff',
