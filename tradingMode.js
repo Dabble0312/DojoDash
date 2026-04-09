@@ -81,7 +81,7 @@ async function loadTradingBlock() {
 
     try {
         const { data, error } = await supabaseClient
-            .from('trading_blocks')   // Uses same table as Focus Mode
+            .from('focus_blocks')   // Uses same table as Focus Mode
             .select('id, block_id, candles, future, window_start')
             .order('id')
             .limit(500);
