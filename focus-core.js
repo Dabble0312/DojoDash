@@ -208,6 +208,14 @@ function startAutoReveal() {
             awaitingGuess    = true;
             setButtonState("guess");
             showStatus("What happens next?");
+
+             // --- ADD THE NARRATOR TRIGGER HERE ---
+        if (window.runNarratorEngine) {
+            runNarratorEngine();
+        }
+        // -------------------------------------
+
+      
             return;
         }
 
@@ -218,13 +226,7 @@ function startAutoReveal() {
         count++;
 
         renderChart();
-        // --- ADD THE NARRATOR TRIGGER HERE ---
-        if (window.runNarratorEngine) {
-            runNarratorEngine();
-        }
-        // -------------------------------------
-
-      
+       
         updateStatsPanel();      // focus-ui.js
         updateDynamicZones();    // focus-patterns.js
 
