@@ -242,3 +242,19 @@ button.btn-dim {
 
 .pattern-explain-item  { margin-bottom: 10px; }
 .pattern-explain-label { font-weight: 700; color: var(--color-text-primary); margin-bottom: 3px; }
+
+
+.btn-narrator {
+    background: var(--color-slate);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-narrator.active {
+    background: #a855f7; /* Purple glow when ON */
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+}
