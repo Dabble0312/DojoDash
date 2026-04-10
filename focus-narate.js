@@ -505,24 +505,56 @@ function _similarity(tokensA, tokensB) {
 // ─────────────────────────────────────────────────────────────────────────────
 // SPEECH ENGINE
 // ─────────────────────────────────────────────────────────────────────────────
+
+// Chrome loads voices asynchronously. Cache them once ready so _speak never
+// races against an empty getVoices() list. Also handle the queued-speech case
+// for when toggleNarrator fires before voices have resolved.
+var _cachedVoices  = [];
+var _pendingSpeech = null;
+
+function _initVoices() {
+    var v = window.speechSynthesis.getVoices();
+    if (v.length > 0) {
+        _cachedVoices = v;
+        if (_pendingSpeech) {
+            var queued = _pendingSpeech;
+            _pendingSpeech = null;
+            _speak(queued);
+        }
+    }
+}
+_initVoices(); // works immediately on Firefox / some Chromium builds
+if (window.speechSynthesis) {
+    window.speechSynthesis.addEventListener('voiceschanged', _initVoices);
+}
+
 function _speak(text) {
     if (!text || text.trim() === '') return;
+
+    // Queue and wait if voices haven't resolved yet
+    if (_cachedVoices.length === 0) {
+        _pendingSpeech = text;
+        window.speechSynthesis.getVoices(); // nudge Chrome to start loading
+        return;
+    }
+
     window.speechSynthesis.cancel();
 
-    const msg  = new SpeechSynthesisUtterance(text);
-    msg.rate   = 1.05;   // measured, authoritative pace
-    msg.pitch  = 0.88;   // lower pitch — senior analyst tone
+    var msg  = new SpeechSynthesisUtterance(text);
+    msg.rate  = 1.05;
+    msg.pitch = 0.88;
 
-    // Prefer a high-quality voice
-    const voices = window.speechSynthesis.getVoices();
-    const preferred = voices.find(v =>
-        v.lang.startsWith('en') && (
-            v.name.includes('Google') ||
-            v.name.includes('Natural') ||
-            v.name.includes('Premium') ||
-            v.name.includes('Enhanced')
-        )
-    ) || voices.find(v => v.lang.startsWith('en'));
+    var preferred =
+        _cachedVoices.find(function(v) {
+            return v.lang.startsWith('en') && (
+                v.name.includes('Google')   ||
+                v.name.includes('Natural')  ||
+                v.name.includes('Premium')  ||
+                v.name.includes('Enhanced')
+            );
+        }) ||
+        _cachedVoices.find(function(v) { return v.lang.startsWith('en-GB'); }) ||
+        _cachedVoices.find(function(v) { return v.lang.startsWith('en'); });
 
     if (preferred) msg.voice = preferred;
 
